@@ -88,26 +88,27 @@ function Bottle({
   ghostCount, ghostColor, hinted, patMode,
 }) {
   const w           = size;
-  const segH        = Math.round(size / 56 * 36);
-  const bodyH       = segH * BOTTLE_CAPACITY;
-  const nkW         = Math.round(w * 0.5);
-  const nkH         = Math.round(w * 0.2);
   const bR          = Math.round(w * 0.25);
   const doneColor   = completed ? getColor(segments[0]) : null;
+
+  // Image-based bottle dimensions
+  // The PNG has a neck region (~18% top) and base (~8% bottom); liquid fills the middle ~74%
+  const imgW        = w;
+  const imgH        = Math.round(w * 2.8);   // aspect ratio of the PNG (~1:2.8)
+  const liquidTop   = Math.round(imgH * 0.18);
+  const liquidBot   = Math.round(imgH * 0.08);
+  const liquidH     = imgH - liquidTop - liquidBot;
 
   return (
     <div
       onClick={onClick}
       className="relative"
       style={{
-        width:    w,
+        width:    imgW,
+        height:   imgH,
         minWidth: 44,
         minHeight: 44,
-        display:        "flex",
-        flexDirection:  "column",
-        alignItems:     "center",
-        justifyContent: "flex-end",
-        cursor:         "pointer",
+        cursor:   "pointer",
         WebkitTapHighlightColor: "transparent",
         transition: shaking ? "none" : "transform 0.15s ease-out, filter 0.15s ease-out",
         transform:  shaking  ? "translateX(0)"
@@ -121,15 +122,6 @@ function Bottle({
                  : "none",
       }}
     >
-      {/* Selection ring */}
-      {selected && (
-        <div className="absolute pointer-events-none" style={{
-          inset: -2,
-          border: "2px solid rgba(255,255,255,0.3)",
-          borderRadius: bR + 4,
-        }} />
-      )}
-
       {/* Hint ring */}
       {hinted && !selected && (
         <div className="absolute pointer-events-none" style={{
@@ -140,42 +132,29 @@ function Bottle({
         }} />
       )}
 
-      {/* Neck */}
-      <div style={{
-        width:        nkW,
-        height:       nkH,
-        background:   "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
-        border:       "1px solid rgba(255,255,255,0.18)",
-        borderBottom: "none",
-        borderRadius: `${Math.round(nkW * 0.2)}px ${Math.round(nkW * 0.2)}px 0 0`,
-      }} />
-
-      {/* Body */}
+      {/* Liquid segments — clipped to the body area of the PNG */}
       <div
-        className="relative overflow-hidden"
+        className="absolute overflow-hidden"
         style={{
-          width:      w,
-          height:     bodyH,
-          background: "linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03) 50%, rgba(0,0,0,0.06))",
-          boxShadow:  "inset 2px 0 5px rgba(255,255,255,0.08), inset -2px 0 5px rgba(0,0,0,0.08), inset 0 -2px 6px rgba(0,0,0,0.12)",
-          border:       "1px solid rgba(255,255,255,0.12)",
-          borderTop:    "none",
-          borderBottom: "none",
+          left:   0,
+          right:  0,
+          top:    liquidTop,
+          height: liquidH,
         }}
       >
         <div className="absolute bottom-0 left-0 right-0 flex flex-col-reverse">
-          {/* Liquid segments */}
           {segments.map((colorIndex, i) => {
             const visible = hiddenCount === 0 || (revealedArr && revealedArr[i]);
             const bg      = visible ? getColor(colorIndex) : "#1a1530";
             const isTop   = i === segments.length - 1;
+            const sliceH  = Math.round(liquidH / BOTTLE_CAPACITY);
 
             return (
-              <div key={i} className="relative" style={{ height: segH, backgroundColor: bg }}>
+              <div key={i} className="relative" style={{ height: sliceH, backgroundColor: bg }}>
                 {/* Wave on top surface */}
                 {isTop && visible && (
                   <div className="absolute top-0 left-0 right-0" style={{
-                    height:     Math.max(2, segH * 0.1),
+                    height:     Math.max(2, sliceH * 0.1),
                     background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.3) 30%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0.3) 70%, transparent)",
                     animation:  "wave 3s ease-in-out infinite",
                   }} />
@@ -185,7 +164,7 @@ function Bottle({
                 {visible && patMode && (
                   <div className="absolute inset-0 flex items-center justify-center" style={{
                     color:        "rgba(0,0,0,0.25)",
-                    fontSize:     Math.max(8, segH * 0.3),
+                    fontSize:     Math.max(8, sliceH * 0.3),
                     fontWeight:   700,
                     userSelect:   "none",
                     letterSpacing: 1,
@@ -198,7 +177,7 @@ function Bottle({
                 {!visible && (
                   <div className="absolute inset-0 flex items-center justify-center" style={{
                     color:      "rgba(255,255,255,0.1)",
-                    fontSize:   Math.max(10, segH * 0.35),
+                    fontSize:   Math.max(10, sliceH * 0.35),
                     fontWeight: 700,
                     fontFamily: FONTS.orbitron,
                     userSelect: "none",
@@ -212,40 +191,45 @@ function Bottle({
 
           {/* Ghost pour preview */}
           {ghostCount > 0 && ghostColor !== null &&
-            Array.from({ length: ghostCount }, (_, gi) => (
-              <div key={`g${gi}`} style={{
-                height:          segH,
-                backgroundColor: getColor(ghostColor),
-                opacity:         0.25,
-                borderTop:       gi === 0 ? "2px dashed rgba(255,255,255,0.3)" : "none",
-              }} />
-            ))
+            Array.from({ length: ghostCount }, (_, gi) => {
+              const sliceH = Math.round(liquidH / BOTTLE_CAPACITY);
+              return (
+                <div key={`g${gi}`} style={{
+                  height:          sliceH,
+                  backgroundColor: getColor(ghostColor),
+                  opacity:         0.25,
+                  borderTop:       gi === 0 ? "2px dashed rgba(255,255,255,0.3)" : "none",
+                }} />
+              );
+            })
           }
         </div>
-
-        {/* Glass shine */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: "linear-gradient(90deg, rgba(255,255,255,0.06) 0%, transparent 30%, transparent 70%, rgba(255,255,255,0.03) 100%)",
-        }} />
       </div>
 
-      {/* Base */}
-      <div style={{
-        width:        w,
-        height:       Math.max(3, w * 0.08),
-        background:   "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
-        border:       "1px solid rgba(255,255,255,0.12)",
-        borderTop:    "none",
-        borderRadius: `0 0 ${bR}px ${bR}px`,
-        boxShadow:    "0 2px 8px rgba(0,0,0,0.2)",
-      }} />
+      {/* Bottle PNG overlay — sits on top of liquid */}
+      <img
+        src="assets/bottle.png"
+        alt=""
+        draggable={false}
+        className="absolute inset-0 pointer-events-none"
+        style={{ width: imgW, height: imgH, objectFit: "fill" }}
+      />
+
+      {/* Selection ring */}
+      {selected && (
+        <div className="absolute pointer-events-none" style={{
+          inset: -2,
+          border: "2px solid rgba(255,255,255,0.3)",
+          borderRadius: bR + 4,
+        }} />
+      )}
 
       {/* Completion checkmark */}
       {completed && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 5 }}>
           <div style={{
-            width:          w * 0.4,
-            height:         w * 0.4,
+            width:          imgW * 0.4,
+            height:         imgW * 0.4,
             borderRadius:   "50%",
             background:     `${doneColor}30`,
             border:         `2px solid ${doneColor}88`,
@@ -253,7 +237,7 @@ function Bottle({
             alignItems:     "center",
             justifyContent: "center",
             color:          doneColor,
-            fontSize:       w * 0.22,
+            fontSize:       imgW * 0.22,
             fontWeight:     900,
             backdropFilter: "blur(2px)",
           }}>
