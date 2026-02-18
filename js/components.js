@@ -92,12 +92,13 @@ function Bottle({
   const doneColor   = completed ? getColor(segments[0]) : null;
 
   // Image-based bottle dimensions
-  // The PNG has a neck region (~18% top) and base (~8% bottom); liquid fills the middle ~74%
+  // The PNG interior: neck ends ~22% from top, base ~5% from bottom, walls ~14% each side
   const imgW        = w;
   const imgH        = Math.round(w * 2.8);   // aspect ratio of the PNG (~1:2.8)
-  const liquidTop   = Math.round(imgH * 0.18);
-  const liquidBot   = Math.round(imgH * 0.08);
+  const liquidTop   = Math.round(imgH * 0.22);
+  const liquidBot   = Math.round(imgH * 0.05);
   const liquidH     = imgH - liquidTop - liquidBot;
+  const liquidPadX  = Math.round(w * 0.9);  // inset from bottle walls
 
   return (
     <div
@@ -136,10 +137,12 @@ function Bottle({
       <div
         className="absolute overflow-hidden"
         style={{
-          left:   0,
-          right:  0,
-          top:    liquidTop,
-          height: liquidH,
+          width:        liquidPadX,
+          left:         liquidPadX,
+          transform:    "translateX(-99%)",
+          top:          liquidTop,
+          height:       liquidH,
+          borderRadius: `0 0 ${Math.round(w * 0.1)}px ${Math.round(w * 0.1)}px`,
         }}
       >
         <div className="absolute bottom-0 left-0 right-0 flex flex-col-reverse">

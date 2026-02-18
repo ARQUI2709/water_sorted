@@ -2,7 +2,7 @@
 // MAIN APP COMPONENT
 // ============================================
 
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useCallback, useRef } = React;
 
 function App() {
   // --- State ---
@@ -33,9 +33,13 @@ function App() {
   const play = useCallback((fn) => { if (!muted) fn(); }, [muted]);
 
   // --- Layout on resize ---
+  const boardRef = useRef(null);
+
   useEffect(() => {
-    const recalc = () =>
-      setLayout(calculateLayout(bottles.length || 5, window.innerWidth, window.innerHeight));
+    const recalc = () => {
+      const boardH = boardRef.current ? boardRef.current.clientHeight : window.innerHeight - 155;
+      setLayout(calculateLayout(bottles.length || 5, window.innerWidth, boardH));
+    };
 
     recalc();
     window.addEventListener("resize", recalc);
@@ -337,6 +341,7 @@ function App() {
 
       {/* ---------- Game board ---------- */}
       <div
+        ref={boardRef}
         className="flex-1 flex items-center justify-center w-full px-1 overflow-hidden"
         style={{ position: "relative", zIndex: 10 }}
         onClick={handleBgTap}

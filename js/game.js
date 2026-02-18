@@ -159,9 +159,9 @@ function findHint(bottles) {
 
 // --- Layout calculation ---
 
-function calculateLayout(totalBottles, vw, vh) {
+function calculateLayout(totalBottles, vw, boardH) {
   const availW = vw - 16;
-  const availH = vh - 155;
+  const availH = boardH - 16;
   const gap    = 6;
 
   let bestSize = 20, bestCols = totalBottles, bestRows = 1;
@@ -169,8 +169,8 @@ function calculateLayout(totalBottles, vw, vh) {
   for (let rows = 1; rows <= 4; rows++) {
     const cols   = Math.ceil(totalBottles / rows);
     const maxW   = Math.floor((availW - gap * (cols - 1)) / cols);
-    const maxH   = Math.floor((availH - gap * (rows - 1)) / (rows * 3.2));
-    const size   = Math.max(24, Math.min(vw > vh ? 48 : 56, maxW, maxH));
+    const maxH   = Math.floor((availH - gap * (rows - 1)) / (rows * 2.8));
+    const size   = Math.max(24, Math.min(maxW, maxH));
 
     if (size > bestSize || (size === bestSize && rows < bestRows)) {
       bestSize = size;
