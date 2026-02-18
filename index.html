@@ -8,159 +8,42 @@
   <meta name="apple-mobile-web-app-title" content="Water Sort">
   <meta name="theme-color" content="#0f0c29">
   <title>Water Sort Puzzle</title>
+
+  <!-- PWA Manifest & Icons -->
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <link rel="apple-touch-icon" sizes="512x512" href="apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- External Libraries -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    *{margin:0;padding:0}
-    html,body,#root{width:100%;height:100%;overflow:hidden;background:#0f0c29}
+    * { margin: 0; padding: 0; }
+    html, body, #root {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #0f0c29;
+    }
   </style>
 </head>
 <body>
-<div id="root"></div>
-<script type="text/babel">
-const{useState,useEffect,useCallback,useMemo,useRef}=React;
+  <div id="root"></div>
 
-const MC=["#E6194B","#3CB44B","#4363D8","#F58231","#911EB4","#42D4F4","#F032E6","#BFEF45","#FABED4","#469990","#DCBEFF","#9A6324","#FFFAC8","#800000","#AAFFC3","#808000","#FFD8B1","#000075","#A9A9A9","#FFE119","#E6BEFF","#AA6E28","#00FFAA","#FF4444"];
-const CN=["Red","Green","Blue","Orange","Purple","Cyan","Magenta","Lime","Pink","Teal","Lavender","Brown","Beige","Maroon","Mint","Olive","Apricot","Navy","Grey","Yellow","Orchid","Tan","Spring","Coral"];
-const PAT=["///","···","xxx","ooo","+++","---","\\\\\\","≡≡≡",":::","###","%%%","@@@","&&&","^^^","~~~","|||","***","===","◊◊◊","○○○","◇◇◇","△△△","□□□","♦♦♦"];
-const gc=i=>i<MC.length?MC[i]:(o=>`hsl(${(o*137.508+60)%360},75%,${45+(o%3)*10}%)`)(i-MC.length);
-const CAP=4;
-
-let actx=null;
-function getA(){if(!actx)try{actx=new(window.AudioContext||window.webkitAudioContext)()}catch{};return actx;}
-function tone(f,d=0.08,v=0.12,t="sine"){const a=getA();if(!a)return;const o=a.createOscillator(),g=a.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+d);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d);}
-const sndTap=()=>tone(600,0.05,0.08);
-const sndPour=()=>{tone(440,0.1,0.1);setTimeout(()=>tone(520,0.1,0.08),60);};
-const sndErr=()=>tone(200,0.15,0.1,"square");
-const sndWin=()=>{[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.2,0.12),i*120));};
-const sndDone=()=>tone(880,0.12,0.1);
-
-const hap=(ms=10)=>{try{navigator.vibrate?.(ms)}catch{}};
-const hapErr=()=>{try{navigator.vibrate?.([30,50,30])}catch{}};
-const hapWin=()=>{try{navigator.vibrate?.([50,80,50,80,100])}catch{}};
-
-const numColorsFor=l=>l<=19?Math.min(3+Math.floor((l-1)/2),12):12+Math.floor((l-20)/5)+1;
-const numEmptyFor=n=>2+Math.floor((n-1)/5);
-const hiddenFor=l=>l<30?0:Math.min(Math.floor((l-25)/5),CAP-1);
-
-function shuf(a){const r=[...a];for(let p=0;p<5;p++)for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;}
-function genLevel(l){const nc=numColorsFor(l),ne=numEmptyFor(nc),hc=hiddenFor(l);const s=[];for(let c=0;c<nc;c++)for(let i=0;i<CAP;i++)s.push(c);const sh=shuf(s),bots=[];for(let i=0;i<nc;i++)bots.push(sh.slice(i*CAP,(i+1)*CAP));for(let e=0;e<ne;e++)bots.push([]);const rev=bots.map(b=>{if(!hc||!b.length)return b.map(()=>true);return b.map((_,i)=>i>=hc);});return{bottles:bots,numColors:nc,numEmpty:ne,hiddenCount:hc,revealed:rev};}
-const tc=b=>b.length?b[b.length-1]:-1;
-function tCnt(b){if(!b.length)return 0;const t=b[b.length-1];let c=0;for(let i=b.length-1;i>=0;i--){if(b[i]===t)c++;else break;}return c;}
-const isSC=b=>b.length>0&&b.every(s=>s===b[0]);
-function canPour(B,f,t){if(f===t)return false;const s=B[f],d=B[t];if(!s.length||d.length>=CAP)return false;if(!d.length&&s.length===CAP&&isSC(s))return false;return !d.length||tc(s)===tc(d);}
-function pourCount(B,f,t){if(!canPour(B,f,t))return 0;return Math.min(tCnt(B[f]),CAP-B[t].length);}
-function pour(B,R,f,t){if(!canPour(B,f,t))return null;const nb=B.map(b=>[...b]),nr=R.map(r=>[...r]);const col=tc(nb[f]),cnt=Math.min(tCnt(nb[f]),CAP-nb[t].length);for(let i=0;i<cnt;i++){nr[f].pop();nb[f].pop();nb[t].push(col);nr[t].push(true);}if(nb[f].length)nr[f][nb[f].length-1]=true;return{bottles:nb,revealed:nr};}
-const isWin=(B,R)=>B.every((b,i)=>!b.length||(b.length===CAP&&b.every(s=>s===b[0])&&R[i].every(Boolean)));
-const isDone=(b,r)=>b.length===CAP&&b.every(s=>s===b[0])&&(!r||r.every(Boolean));
-function isDeadlocked(B){for(let f=0;f<B.length;f++){if(!B[f].length)continue;for(let t=0;t<B.length;t++){if(canPour(B,f,t))return false;}}return true;}
-function findHint(B){for(let f=0;f<B.length;f++){if(!B[f].length||isDone(B[f],null))continue;for(let t=0;t<B.length;t++){if(canPour(B,f,t))return{from:f,to:t};}}return null;}
-
-const gB=l=>{try{return parseInt(localStorage.getItem(`wb${l}`))||0}catch{return 0}};
-const sB=(l,m)=>{try{const p=gB(l);if(!p||m<p)localStorage.setItem(`wb${l}`,m)}catch{}};
-const gStreak=()=>{try{return parseInt(localStorage.getItem('wstreak'))||0}catch{return 0}};
-const sStreak=n=>{try{localStorage.setItem('wstreak',n)}catch{}};
-const gMuted=()=>{try{return localStorage.getItem('wmute')==='1'}catch{return false}};
-const sMuted=v=>{try{localStorage.setItem('wmute',v?'1':'0')}catch{}};
-const gPatMode=()=>{try{return localStorage.getItem('wpat')==='1'}catch{return false}};
-const sPatMode=v=>{try{localStorage.setItem('wpat',v?'1':'0')}catch{}};
-
-function calcLayout(total,vw,vh){const availW=vw-16,availH=vh-155,gap=6;let best=20,bC=total,bR=1;for(let r=1;r<=4;r++){const c=Math.ceil(total/r);const mW=Math.floor((availW-gap*(c-1))/c);const mH=Math.floor((availH-gap*(r-1))/(r*3.2));const s=Math.max(24,Math.min(vw>vh?48:56,mW,mH));if(s>best||(s===best&&r<bR)){best=s;bC=c;bR=r;}}return{size:best,cols:bC,gap};}
-
-function Stars(){const s=useMemo(()=>Array.from({length:50},(_,i)=>({id:i,l:Math.random()*100,t:Math.random()*100,s:Math.random()*2+.5,d:Math.random()*4,u:Math.random()*2+2})),[]);return <div className="fixed inset-0 pointer-events-none" style={{zIndex:0}}>{s.map(p=><div key={p.id} className="absolute rounded-full bg-white" style={{left:`${p.l}%`,top:`${p.t}%`,width:p.s,height:p.s,animation:`twinkle ${p.u}s ease-in-out ${p.d}s infinite`,opacity:.3}}/>)}</div>;}
-function Confetti(){const p=useMemo(()=>Array.from({length:40},(_,i)=>({id:i,l:Math.random()*100,c:MC[i%MC.length],dl:Math.random()*1.5,du:2+Math.random()*2,sz:4+Math.random()*5,dr:(Math.random()-.5)*80,ro:Math.random()*720})),[]);return <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{zIndex:60}}>{p.map(c=><div key={c.id} style={{position:"absolute",left:`${c.l}%`,top:-20,width:c.sz,height:c.sz*.6,backgroundColor:c.c,borderRadius:1,animation:`confettiFall ${c.du}s ease-in ${c.dl}s forwards`,"--drift":`${c.dr}px`,"--rot":`${c.ro}deg`}}/>)}</div>;}
-
-function Bottle({segments,revealedArr,selected,completed,onClick,hiddenCount,shaking,size,ghostCount,ghostColor,hinted,patMode}){
-  const w=size,segH=Math.round(size/56*36),bodyH=segH*CAP,nkW=Math.round(w*.5),nkH=Math.round(w*.2),bR=Math.round(w*.25),cc=completed?gc(segments[0]):null;
-  return(<div onClick={onClick} className="relative" style={{width:w,minWidth:44,minHeight:44,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",cursor:"pointer",WebkitTapHighlightColor:"transparent",transition:shaking?"none":"transform 0.15s ease-out,filter 0.15s ease-out",transform:shaking?"translateX(0)":selected?"translateY(-10px) scale(1.04)":"scale(1)",filter:selected?"drop-shadow(0 0 10px rgba(255,255,255,0.5))":completed?`drop-shadow(0 0 6px ${cc}55)`:"none",animation:shaking?"shake 0.3s ease-out":hinted?"hintPulse 0.8s ease-in-out 2":"none"}}>
-    {selected&&<div className="absolute pointer-events-none" style={{inset:-2,border:"2px solid rgba(255,255,255,0.3)",borderRadius:bR+4}}/>}
-    {hinted&&!selected&&<div className="absolute pointer-events-none" style={{inset:-3,border:"2px solid rgba(139,92,246,0.6)",borderRadius:bR+5,animation:"hintPulse 0.8s ease-in-out 2"}}/>}
-    <div style={{width:nkW,height:nkH,background:"linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))",border:"1px solid rgba(255,255,255,0.18)",borderBottom:"none",borderRadius:`${Math.round(nkW*.2)}px ${Math.round(nkW*.2)}px 0 0`}}/>
-    <div className="relative overflow-hidden" style={{width:w,height:bodyH,background:"linear-gradient(135deg,rgba(255,255,255,0.1),rgba(255,255,255,0.03) 50%,rgba(0,0,0,0.06))",boxShadow:"inset 2px 0 5px rgba(255,255,255,0.08),inset -2px 0 5px rgba(0,0,0,0.08),inset 0 -2px 6px rgba(0,0,0,0.12)",border:"1px solid rgba(255,255,255,0.12)",borderTop:"none",borderBottom:"none"}}>
-      <div className="absolute bottom-0 left-0 right-0 flex flex-col-reverse">
-        {segments.map((ci,i)=>{const vis=hiddenCount===0||(revealedArr&&revealedArr[i]);const bg=vis?gc(ci):"#1a1530";const isTop=i===segments.length-1;return <div key={i} className="relative" style={{height:segH,backgroundColor:bg}}>{isTop&&vis&&<div className="absolute top-0 left-0 right-0" style={{height:Math.max(2,segH*.1),background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.3) 30%,rgba(255,255,255,0.4) 50%,rgba(255,255,255,0.3) 70%,transparent)",animation:"wave 3s ease-in-out infinite"}}/>}{vis&&patMode&&<div className="absolute inset-0 flex items-center justify-center" style={{color:"rgba(0,0,0,0.25)",fontSize:Math.max(8,segH*.3),fontWeight:700,userSelect:"none",letterSpacing:1}}>{PAT[ci%PAT.length]}</div>}{!vis&&<div className="absolute inset-0 flex items-center justify-center" style={{color:"rgba(255,255,255,0.1)",fontSize:Math.max(10,segH*.35),fontWeight:700,fontFamily:"'Orbitron',sans-serif",userSelect:"none"}}>?</div>}</div>;})}
-        {ghostCount>0&&ghostColor!==null&&Array.from({length:ghostCount},(_,gi)=>(<div key={`g${gi}`} style={{height:segH,backgroundColor:gc(ghostColor),opacity:0.25,borderTop:gi===0?"2px dashed rgba(255,255,255,0.3)":"none"}}/>))}
-      </div>
-      <div className="absolute inset-0 pointer-events-none" style={{background:"linear-gradient(90deg,rgba(255,255,255,0.06) 0%,transparent 30%,transparent 70%,rgba(255,255,255,0.03) 100%)"}}/>
-    </div>
-    <div style={{width:w,height:Math.max(3,w*.08),background:"linear-gradient(135deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))",border:"1px solid rgba(255,255,255,0.12)",borderTop:"none",borderRadius:`0 0 ${bR}px ${bR}px`,boxShadow:"0 2px 8px rgba(0,0,0,0.2)"}}/>
-    {completed&&<div className="absolute inset-0 flex items-center justify-center" style={{zIndex:5}}><div style={{width:w*.4,height:w*.4,borderRadius:"50%",background:`${cc}30`,border:`2px solid ${cc}88`,display:"flex",alignItems:"center",justifyContent:"center",color:cc,fontSize:w*.22,fontWeight:900,backdropFilter:"blur(2px)"}}>✓</div></div>}
-  </div>);
-}
-
-function Legend({nc,open,toggle,patMode}){if(nc<=6)return null;return <div className="w-full px-3 shrink-0" style={{position:"relative",zIndex:15}}><button onClick={toggle} className="flex items-center gap-1 mx-auto" style={{color:"rgba(255,255,255,0.4)",fontSize:"0.7rem",fontFamily:"'Rajdhani',sans-serif",padding:"3px 0",fontWeight:600}}>{open?"▾":"▸"} {nc} colors</button>{open&&<div className="flex flex-wrap justify-center gap-1 pb-1">{Array.from({length:nc},(_,i)=><div key={i} className="flex items-center gap-1 px-1.5 py-0.5 rounded" style={{background:"rgba(255,255,255,0.05)"}}><div className="rounded-full" style={{width:9,height:9,backgroundColor:gc(i),boxShadow:`0 0 3px ${gc(i)}44`}}/><span style={{color:"rgba(255,255,255,0.4)",fontSize:"0.65rem",fontFamily:"'Rajdhani',sans-serif",fontWeight:600}}>{patMode?PAT[i%PAT.length]+" ":""}{CN[i]||`C${i+1}`}</span></div>)}</div>}</div>;}
-
-function useTimer(running){const[sec,setSec]=useState(0);const ref=useRef(null);useEffect(()=>{if(running){ref.current=setInterval(()=>setSec(s=>s+1),1000)}else clearInterval(ref.current);return()=>clearInterval(ref.current)},[running]);const reset=useCallback(()=>setSec(0),[]);return{sec,time:`${String(Math.floor(sec/60)).padStart(2,'0')}:${String(sec%60).padStart(2,'0')}`,reset};}
-
-function LevelJump({show,onClose,onGo}){const[val,setVal]=useState("");if(!show)return null;const go=()=>{const n=parseInt(val);if(n>0){onGo(n);onClose();}};return <div className="fixed inset-0 flex items-center justify-center px-6" style={{zIndex:70,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(8px)"}} onClick={onClose}><div className="p-5 rounded-2xl w-full max-w-xs" style={{background:"linear-gradient(160deg,rgba(30,20,60,0.97),rgba(20,15,45,0.97))",border:"1px solid rgba(255,255,255,0.12)"}} onClick={e=>e.stopPropagation()}><h3 className="font-bold text-center mb-3" style={{fontFamily:"'Orbitron',sans-serif",fontSize:"1rem",color:"rgba(255,255,255,0.85)"}}>GO TO LEVEL</h3><input type="number" inputMode="numeric" min="1" value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} autoFocus placeholder="Level #" className="w-full px-4 py-3 rounded-xl text-center font-bold outline-none" style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.15)",color:"#fff",fontSize:"1.25rem",fontFamily:"'Orbitron',sans-serif"}}/><div className="flex gap-2 mt-3"><button onClick={onClose} className="flex-1 py-2.5 rounded-xl font-semibold active:scale-95" style={{background:"rgba(255,255,255,0.08)",color:"rgba(255,255,255,0.6)",fontSize:"0.85rem",fontFamily:"'Rajdhani',sans-serif"}}>Cancel</button><button onClick={go} className="flex-1 py-2.5 rounded-xl font-bold text-white active:scale-95" style={{background:"linear-gradient(135deg,#8b5cf6,#6366f1)",fontSize:"0.85rem",fontFamily:"'Orbitron',sans-serif"}}>GO</button></div></div></div>;}
-
-function App(){
-  const[level,setLevel]=useState(()=>{try{return parseInt(localStorage.getItem("wsp_level"))||1}catch{return 1}});
-  const[bottles,setBottles]=useState([]);const[revealed,setRevealed]=useState([]);const[numColors,setNumColors]=useState(3);const[hiddenCount,setHiddenCount]=useState(0);const[selected,setSelected]=useState(null);const[moves,setMoves]=useState(0);const[history,setHistory]=useState([]);const[showWin,setShowWin]=useState(false);const[best,setBest]=useState(0);const[shaking,setShaking]=useState(null);const[legOpen,setLegOpen]=useState(false);const[streak,setStreak]=useState(gStreak);const[layout,setLayout]=useState({size:48,cols:5,gap:6});const[muted,setMuted]=useState(gMuted);const[patMode,setPatMode]=useState(gPatMode);const[hint,setHint]=useState(null);const[hintsLeft,setHintsLeft]=useState(3);const[deadlock,setDeadlock]=useState(false);const[showJump,setShowJump]=useState(false);
-  const timerRunning=!showWin&&bottles.length>0;const{time,reset:resetTimer}=useTimer(timerRunning);const snd=useCallback(fn=>{if(!muted)fn();},[muted]);
-  useEffect(()=>{const calc=()=>setLayout(calcLayout(bottles.length||5,window.innerWidth,window.innerHeight));calc();window.addEventListener("resize",calc);const oc=()=>setTimeout(calc,150);window.addEventListener("orientationchange",oc);return()=>{window.removeEventListener("resize",calc);window.removeEventListener("orientationchange",oc);};},[bottles.length]);
-  const initLevel=useCallback(lvl=>{const g=genLevel(lvl);setBottles(g.bottles);setRevealed(g.revealed);setNumColors(g.numColors);setHiddenCount(g.hiddenCount);setSelected(null);setMoves(0);setHistory([]);setShowWin(false);setBest(gB(lvl));setShaking(null);setHint(null);setHintsLeft(3);setDeadlock(false);resetTimer();try{localStorage.setItem("wsp_level",lvl)}catch{}},[resetTimer]);
-  useEffect(()=>{initLevel(level)},[level,initLevel]);
-  useEffect(()=>{if(bottles.length&&revealed.length&&!showWin){if(isWin(bottles,revealed)){setDeadlock(false);return;}setDeadlock(isDeadlocked(bottles));}else{setDeadlock(false);}},[bottles,revealed,showWin]);
-  const doShake=useCallback(i=>{setShaking(i);setTimeout(()=>setShaking(null),300);},[]);
-  const handleTap=useCallback(idx=>{if(showWin)return;hap();snd(sndTap);setHint(null);if(selected===null){if(bottles[idx].length>0&&!isDone(bottles[idx],revealed[idx]))setSelected(idx);}else if(selected===idx){setSelected(null);}else{if(canPour(bottles,selected,idx)){setHistory(h=>[...h,{bottles:bottles.map(b=>[...b]),revealed:revealed.map(r=>[...r]),moves}]);setMoves(m=>m+1);snd(sndPour);const res=pour(bottles,revealed,selected,idx);setBottles(res.bottles);setRevealed(res.revealed);setSelected(null);if(isDone(res.bottles[idx],res.revealed[idx]))snd(sndDone);if(isWin(res.bottles,res.revealed)){hapWin();snd(sndWin);const m=moves+1;sB(level,m);setBest(p=>(!p||m<p)?m:p);const ns=streak+1;setStreak(ns);sStreak(ns);setTimeout(()=>setShowWin(true),400);}}else{hapErr();snd(sndErr);doShake(idx);setSelected(null);}}},[bottles,revealed,selected,showWin,moves,level,doShake,streak,snd]);
-  const undo=useCallback(()=>{if(!history.length)return;hap();snd(sndTap);const l=history[history.length-1];setBottles(l.bottles);setRevealed(l.revealed);setMoves(l.moves);setHistory(h=>h.slice(0,-1));setSelected(null);setHint(null);},[history,snd]);
-  const restart=useCallback(()=>{setStreak(0);sStreak(0);initLevel(level);snd(sndTap);},[level,initLevel,snd]);
-  const doHint=useCallback(()=>{if(hintsLeft<=0)return;const h=findHint(bottles);if(h){setHint(h);setHintsLeft(n=>n-1);snd(sndTap);setTimeout(()=>setHint(null),2000);}},[bottles,snd,hintsLeft]);
-  const bgTap=useCallback(e=>{if(e.target===e.currentTarget&&selected!==null){setSelected(null);hap();}},[selected]);
-  const{size,cols,gap}=layout;const done=bottles.filter((b,i)=>isDone(b,revealed[i])).length;const empty=bottles.filter(b=>!b.length).length;const hLabel=hiddenCount===0?null:hiddenCount>=3?"TOP":"H"+hiddenCount;
-  const ghostFor=useCallback(idx=>{if(selected===null||selected===idx)return{count:0,color:null};if(!canPour(bottles,selected,idx))return{count:0,color:null};return{count:pourCount(bottles,selected,idx),color:tc(bottles[selected])};},[bottles,selected]);
-  const F="'Rajdhani',sans-serif",FO="'Orbitron',sans-serif";
-
-  return(
-    <div className="fixed inset-0 flex flex-col overflow-hidden select-none" style={{background:"linear-gradient(160deg,#0f0c29,#302b63 50%,#24243e)",touchAction:"manipulation",overscrollBehavior:"none",WebkitUserSelect:"none",paddingTop:"env(safe-area-inset-top,0px)",paddingBottom:"env(safe-area-inset-bottom,0px)"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');@keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.8}}@keyframes bounceIn{0%{transform:scale(.3);opacity:0}50%{transform:scale(1.08)}70%{transform:scale(.95)}100%{transform:scale(1);opacity:1}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}@keyframes wave{0%,100%{transform:translateX(-10%) scaleY(1)}50%{transform:translateX(10%) scaleY(1.5)}}@keyframes shake{0%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}100%{transform:translateX(0)}}@keyframes confettiFall{0%{transform:translateY(0) translateX(0) rotate(0);opacity:1}100%{transform:translateY(100vh) translateX(var(--drift)) rotate(var(--rot));opacity:0}}@keyframes hintPulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}*{-webkit-tap-highlight-color:transparent;box-sizing:border-box}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}input[type=number]{-moz-appearance:textfield}`}</style>
-      <Stars/>
-      <div className="w-full px-3 pt-2 pb-1 shrink-0" style={{position:"relative",zIndex:20}}>
-        <div className="flex items-center justify-between max-w-3xl mx-auto">
-          <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <button onClick={()=>setShowJump(true)} className="font-black active:scale-95" style={{fontFamily:FO,fontSize:"1.1rem",background:"linear-gradient(135deg,#fff,#c084fc,#818cf8)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent"}}>LV{level}</button>
-            <span className="px-2 py-0.5 rounded-full" style={{background:"rgba(255,255,255,0.07)",color:"rgba(255,255,255,0.6)",border:"1px solid rgba(255,255,255,0.08)",fontSize:"0.75rem",fontFamily:F,fontWeight:600}}>{moves} mv</span>
-            {best>0&&<span className="px-1.5 py-0.5 rounded-full" style={{background:"rgba(255,215,0,0.1)",color:"#FFD700",border:"1px solid rgba(255,215,0,0.15)",fontSize:"0.7rem",fontFamily:F}}>★{best}</span>}
-            {streak>1&&<span className="px-1.5 py-0.5 rounded-full" style={{background:"rgba(255,100,0,0.12)",color:"#FF6B35",border:"1px solid rgba(255,100,0,0.18)",fontSize:"0.7rem",fontFamily:F}}>🔥{streak}</span>}
-            {hLabel&&<span className="px-1.5 py-0.5 rounded-full" style={{background:"rgba(255,0,110,0.15)",color:"#FF006E",border:"1px solid rgba(255,0,110,0.2)",fontSize:"0.65rem",fontWeight:700,fontFamily:F,animation:"pulse 2s infinite"}}>🔒{hLabel}</span>}
-          </div>
-          <div className="flex items-center gap-2.5 shrink-0">
-            <span style={{fontFamily:FO,fontSize:"0.75rem",color:"rgba(255,255,255,0.3)",letterSpacing:"0.05em"}}>{time}</span>
-            <div className="relative" style={{width:32,height:32}}><svg width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="2.5"/><circle cx="16" cy="16" r="13" fill="none" stroke="#8b5cf6" strokeWidth="2.5" strokeDasharray={`${(done/Math.max(1,numColors))*81.7} 81.7`} strokeLinecap="round" transform="rotate(-90 16 16)" style={{transition:"stroke-dasharray 0.4s ease"}}/></svg><div className="absolute inset-0 flex items-center justify-center" style={{fontSize:"0.65rem",fontWeight:700,color:"rgba(255,255,255,0.55)",fontFamily:F}}>{done}/{numColors}</div></div>
-          </div>
-        </div>
-      </div>
-      {deadlock&&!showWin&&<div className="mx-3 py-1.5 rounded-lg text-center shrink-0" style={{background:"rgba(255,50,50,0.15)",border:"1px solid rgba(255,50,50,0.2)",position:"relative",zIndex:15}}><span style={{fontSize:"0.8rem",color:"#ff6b6b",fontFamily:F,fontWeight:600}}>No moves left — Undo or Restart</span></div>}
-      <div className="shrink-0" style={{position:"relative",zIndex:15}}><Legend nc={numColors} open={legOpen} toggle={()=>setLegOpen(o=>!o)} patMode={patMode}/></div>
-      <div className="flex-1 flex items-center justify-center w-full px-1 overflow-hidden" style={{position:"relative",zIndex:10}} onClick={bgTap}>
-        <div className="flex flex-wrap justify-center content-center" style={{gap,maxWidth:cols*(size+gap)+gap}}>
-          {bottles.map((segs,i)=>{const g=ghostFor(i);return <Bottle key={i} segments={segs} revealedArr={revealed[i]} selected={selected===i} completed={isDone(segs,revealed[i])} hiddenCount={hiddenCount} shaking={shaking===i} size={size} ghostCount={g.count} ghostColor={g.color} hinted={hint&&(hint.from===i||hint.to===i)} patMode={patMode} onClick={()=>handleTap(i)}/>;})}
-        </div>
-      </div>
-      <div className="shrink-0 px-2 pb-1.5" style={{position:"relative",zIndex:20,paddingBottom:"max(6px,env(safe-area-inset-bottom,6px))"}}>
-        <div className="flex justify-center gap-1.5 max-w-md mx-auto">
-          {[{fn:undo,dis:!history.length,l:"UNDO",i:"↶"},{fn:doHint,dis:deadlock||hintsLeft<=0,l:hintsLeft>0?`HINT ×${hintsLeft}`:"—",i:"?"},{fn:restart,l:"RETRY",i:"⟳"},{fn:()=>{setStreak(0);sStreak(0);setLevel(1);hap()},l:"LV.1",i:"1"},{fn:()=>{setMuted(m=>{sMuted(!m);return!m})},l:muted?"SOUND":"MUTE",i:muted?"♪":"♪"},{fn:()=>{setPatMode(p=>{sPatMode(!p);return!p})},l:patMode?"COLOR":"A11Y",i:patMode?"●":"◑"},{fn:()=>{setLevel(l=>l+1);hap()},l:"SKIP",i:"»"}].map((b,i)=>(
-            <button key={i} onClick={b.fn} disabled={b.dis} className="flex-1 flex flex-col items-center justify-center rounded-xl active:scale-90 disabled:opacity-25" style={{background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",minHeight:48,maxWidth:64,transition:"transform 0.1s"}}><span style={{fontSize:"1.1rem",lineHeight:1,color:"rgba(255,255,255,0.8)",fontWeight:700}}>{b.i}</span><span style={{fontSize:"0.55rem",color:"rgba(255,255,255,0.45)",fontFamily:F,fontWeight:700,marginTop:2,letterSpacing:"0.03em"}}>{b.l}</span></button>
-          ))}
-        </div>
-      </div>
-      {showWin&&<><Confetti/><div className="fixed inset-0 flex items-center justify-center px-6" style={{zIndex:50,background:"rgba(0,0,0,0.55)",backdropFilter:"blur(12px)"}}><div className="text-center p-6 rounded-3xl w-full max-w-xs" style={{background:"linear-gradient(160deg,rgba(255,255,255,0.1),rgba(255,255,255,0.03))",border:"1px solid rgba(255,255,255,0.12)",boxShadow:"0 20px 60px rgba(0,0,0,0.5)",animation:"bounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards"}}><div style={{fontSize:"2.5rem",marginBottom:6,animation:"float 2s ease-in-out infinite"}}>🎉</div><h2 className="font-black tracking-wider mb-2" style={{fontFamily:FO,fontSize:"1.2rem",background:"linear-gradient(135deg,#fbbf24,#f59e0b,#fbbf24)",backgroundSize:"200% auto",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",animation:"shimmer 2s linear infinite"}}>COMPLETE!</h2><div className="flex justify-center gap-4 mb-4" style={{fontFamily:F}}><div className="text-center"><div className="font-bold text-purple-200" style={{fontSize:"1.3rem"}}>{moves}</div><div style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.4)"}}>moves</div></div><div className="text-center"><div className="font-bold text-purple-200" style={{fontSize:"1.3rem"}}>{time}</div><div style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.4)"}}>time</div></div>{best>0&&<div className="text-center"><div className="font-bold" style={{fontSize:"1.3rem",color:"#FFD700"}}>★{best}</div><div style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.4)"}}>best</div></div>}{streak>1&&<div className="text-center"><div className="font-bold" style={{fontSize:"1.3rem",color:"#FF6B35"}}>🔥{streak}</div><div style={{fontSize:"0.7rem",color:"rgba(255,255,255,0.4)"}}>streak</div></div>}</div><button onClick={()=>{setLevel(l=>l+1);hap()}} className="w-full py-3 rounded-2xl font-bold text-white active:scale-95" style={{fontFamily:FO,fontSize:"0.85rem",background:"linear-gradient(135deg,#8b5cf6,#6366f1)",boxShadow:"0 4px 16px rgba(139,92,246,0.35)",letterSpacing:"0.1em",minHeight:48}}>NEXT LEVEL →</button></div></div></>}
-      <LevelJump show={showJump} onClose={()=>setShowJump(false)} onGo={n=>{setStreak(0);sStreak(0);setLevel(n);hap();}}/>
-      <div className="fixed pointer-events-none" style={{width:140,height:140,borderRadius:"50%",background:"radial-gradient(circle,rgba(139,92,246,0.08),transparent 70%)",top:"6%",right:"-4%",filter:"blur(35px)",animation:"float 6s ease-in-out infinite",zIndex:0}}/>
-      <div className="fixed pointer-events-none" style={{width:100,height:100,borderRadius:"50%",background:"radial-gradient(circle,rgba(99,102,241,0.06),transparent 70%)",bottom:"10%",left:"-3%",filter:"blur(25px)",animation:"float 8s ease-in-out 2s infinite",zIndex:0}}/>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script>
+  <!--
+    Load order matters — each file depends on the previous:
+      constants  →  audio  →  storage  →  game  →  components  →  app
+  -->
+  <script type="text/babel" src="js/constants.js"></script>
+  <script type="text/babel" src="js/audio.js"></script>
+  <script type="text/babel" src="js/storage.js"></script>
+  <script type="text/babel" src="js/game.js"></script>
+  <script type="text/babel" src="js/components.js"></script>
+  <script type="text/babel" src="js/app.js"></script>
 </body>
 </html>
