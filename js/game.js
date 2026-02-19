@@ -34,23 +34,87 @@ function shuffleArray(array) {
 // --- Level generation ---
 
 function generateLevel(level) {
-  const numColors  = numColorsForLevel(level);
-  const numEmpty   = numEmptyBottles(numColors);
+  const numColors = numColorsForLevel(level);
+  const numEmpty = numEmptyBottles(numColors);
   const hiddenCount = hiddenSegmentsForLevel(level);
 
-  // Build and shuffle a flat array of color indices
+  // Build and shuffle a flat array of color indices.
+  // Re-shuffle until no bottle is already complete (all same color) at start.
   const segments = [];
   for (let c = 0; c < numColors; c++) {
     for (let i = 0; i < BOTTLE_CAPACITY; i++) segments.push(c);
   }
-  const shuffled = shuffleArray(segments);
 
-  // Distribute into bottles
-  const bottles = [];
-  for (let i = 0; i < numColors; i++) {
-    bottles.push(shuffled.slice(i * BOTTLE_CAPACITY, (i + 1) * BOTTLE_CAPACITY));
-  }
+  let shuffled;
+  let bottles;
+  do {
+    shuffled = shuffleArray(segments);
+    bottles = [];
+    for (let i = 0; i < numColors; i++) {
+      bottles.push(shuffled.slice(i * BOTTLE_CAPACITY, (i + 1) * BOTTLE_CAPACITY));
+    }
+  } while (bottles.some(b => b.length === BOTTLE_CAPACITY && b.every(s => s === b[0])));
+
   for (let i = 0; i < numEmpty; i++) bottles.push([]);
+
+  // Repair: ensure no hidden segment shares a color with the first visible
+  // segment of the same bottle. If it does, swap it with a random segment
+  // from another bottle's visible zone that won't introduce a new conflict.
+  if (hiddenCount > 0) {
+    const MAX_ATTEMPTS = 200;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      let conflictFound = false;
+
+      for (let bi = 0; bi < numColors; bi++) {
+        const bottle = bottles[bi];
+        if (bottle.length <= hiddenCount) continue; // all-hidden or empty — skip
+
+        const firstVisible = bottle[hiddenCount]; // the topmost visible color
+        // Check each hidden slot
+        for (let hi = 0; hi < hiddenCount; hi++) {
+          if (bottle[hi] === firstVisible) {
+            conflictFound = true;
+            // Find a swap candidate: a visible segment in another bottle
+            // that is a different color from *its* first-visible, and whose
+            // color won't equal bottle[hiddenCount] after the swap.
+            let swapped = false;
+            const candidateBottles = shuffleArray([...Array(numColors).keys()].filter(x => x !== bi));
+            for (const bj of candidateBottles) {
+              const other = bottles[bj];
+              if (other.length <= hiddenCount) continue;
+              // Try each visible segment in the other bottle
+              for (let vi = hiddenCount; vi < other.length; vi++) {
+                const cand = other[vi];
+                // After swap: bottle[hi] becomes cand, other[vi] becomes firstVisible
+                // New conflict in bi: cand === firstVisible? → still bad
+                if (cand === firstVisible) continue;
+                // New conflict in bj: firstVisible would become the new bottom-visible → still bad
+                if (firstVisible === other[hiddenCount]) continue;
+                // Do the swap
+                bottles[bi][hi] = cand;
+                bottles[bj][vi] = firstVisible;
+                swapped = true;
+                break;
+              }
+              if (swapped) break;
+            }
+            if (!swapped) {
+              // Fallback: re-shuffle all segments and redistribute
+              const flat = bottles.slice(0, numColors).flat();
+              const reshuffled = shuffleArray(flat);
+              for (let i = 0; i < numColors; i++) {
+                bottles[i] = reshuffled.slice(i * BOTTLE_CAPACITY, (i + 1) * BOTTLE_CAPACITY);
+              }
+            }
+            break; // restart outer check after any change
+          }
+        }
+        if (conflictFound) break;
+      }
+
+      if (!conflictFound) break; // all bottles are clean
+    }
+  }
 
   // Build revealed mask (hidden segments are false)
   const revealed = bottles.map(bottle => {
@@ -106,7 +170,7 @@ function pourCount(bottles, from, to) {
 function pour(bottles, revealed, from, to) {
   if (!canPour(bottles, from, to)) return null;
 
-  const newBottles  = bottles.map(b => [...b]);
+  const newBottles = bottles.map(b => [...b]);
   const newRevealed = revealed.map(r => [...r]);
 
   const color = topColor(newBottles[from]);
@@ -133,8 +197,8 @@ const isWinCondition = (bottles, revealed) =>
   bottles.every((bottle, i) =>
     !bottle.length ||
     (bottle.length === BOTTLE_CAPACITY &&
-     bottle.every(s => s === bottle[0]) &&
-     revealed[i].every(Boolean))
+      bottle.every(s => s === bottle[0]) &&
+      revealed[i].every(Boolean))
   );
 
 function isDeadlocked(bottles) {
@@ -162,15 +226,15 @@ function findHint(bottles) {
 function calculateLayout(totalBottles, vw, boardH) {
   const availW = vw - 16;
   const availH = boardH - 16;
-  const gap    = 6;
+  const gap = 6;
 
   let bestSize = 20, bestCols = totalBottles, bestRows = 1;
 
   for (let rows = 1; rows <= 4; rows++) {
-    const cols   = Math.ceil(totalBottles / rows);
-    const maxW   = Math.floor((availW - gap * (cols - 1)) / cols);
-    const maxH   = Math.floor((availH - gap * (rows - 1)) / (rows * 2.8));
-    const size   = Math.max(24, Math.min(maxW, maxH));
+    const cols = Math.ceil(totalBottles / rows);
+    const maxW = Math.floor((availW - gap * (cols - 1)) / cols);
+    const maxH = Math.floor((availH - gap * (rows - 1)) / (rows * 2.8));
+    const size = Math.max(24, Math.min(maxW, maxH));
 
     if (size > bestSize || (size === bestSize && rows < bestRows)) {
       bestSize = size;
