@@ -9,8 +9,17 @@ function numColorsForLevel(level) {
   return 12 + Math.floor((level - 20) / 5) + 1;
 }
 
-function numEmptyBottles(numColors) {
-  return 2 + Math.floor((numColors - 1) / 5);
+function chooseE(N, CAP, tier) {
+  const band = N <= 8 ? 0 : N <= 20 ? 1 : 2;
+  const ranges = (DIFFICULTY_RANGES[CAP] || DIFFICULTY_RANGES[4])[band];
+  const [lo, hi] = ranges;
+  if (tier === 'hard') return lo;
+  if (tier === 'easy') return hi;
+  return Math.round((lo + hi) / 2); // normal
+}
+
+function numEmptyBottles(numColors, tier) {
+  return chooseE(numColors, BOTTLE_CAPACITY, tier || 'normal');
 }
 
 function hiddenSegmentsForLevel(level) {
@@ -33,9 +42,9 @@ function shuffleArray(array) {
 
 // --- Level generation ---
 
-function generateLevel(level) {
+function generateLevel(level, tier) {
   const numColors = numColorsForLevel(level);
-  const numEmpty = numEmptyBottles(numColors);
+  const numEmpty = numEmptyBottles(numColors, tier);
   const hiddenCount = hiddenSegmentsForLevel(level);
 
   // Build and shuffle a flat array of color indices.

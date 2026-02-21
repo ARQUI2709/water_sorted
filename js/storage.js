@@ -43,3 +43,16 @@ function savePatternMode(value) { storageSet('wpat', value ? '1' : '0'); }
 
 function getSavedLevel()      { return parseInt(storageGet('wsp_level', 1)) || 1; }
 function saveLevel(level)     { storageSet('wsp_level', level); }
+
+// --- Stars ---
+
+function getBestStars(level)        { return parseInt(storageGet(`wstar${level}`, 0)) || 0; }
+function saveBestStars(level, stars) {
+  const prev = getBestStars(level);
+  if (stars > prev) storageSet(`wstar${level}`, stars);
+}
+
+// --- Difficulty ---
+
+function getDifficulty()        { return storageGet('wdiff', 'normal'); }
+function saveDifficulty(value)  { storageSet('wdiff', value); }

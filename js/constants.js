@@ -30,6 +30,21 @@ const FONTS = {
   orbitron: "'Orbitron', sans-serif",
 };
 
+// Difficulty limits: undo cap and hints per tier
+const DIFFICULTY_LIMITS = {
+  easy:   { undos: Infinity, hints: 5 },
+  normal: { undos: 10,       hints: 3 },
+  hard:   { undos: 3,        hints: 2 },
+};
+
+// Difficulty ranges: E (empty bottles) per [band][CAP]
+// Band 0: N 3–8, Band 1: N 9–20, Band 2: N 21–36
+const DIFFICULTY_RANGES = {
+  4: [[2, 4], [2, 4], [3, 5]],
+  5: [[2, 4], [3, 5], [4, 6]],
+  6: [[3, 5], [4, 6], [5, 7]],
+};
+
 // Returns a color string for a given index.
 // Falls back to HSL for indexes beyond the palette.
 function getColor(index) {
