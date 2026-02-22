@@ -14,7 +14,7 @@ function storageGet(key, defaultValue) {
 function storageSet(key, value) {
   try {
     localStorage.setItem(key, value);
-  } catch {}
+  } catch { }
 }
 
 // --- Per-level best moves ---
@@ -30,23 +30,23 @@ function saveBestMoves(level, moves) {
 
 // --- Win streak ---
 
-function getStreak()        { return parseInt(storageGet('wstreak', 0)) || 0; }
-function saveStreak(value)  { storageSet('wstreak', value); }
+function getStreak() { return parseInt(storageGet('wstreak', 0)) || 0; }
+function saveStreak(value) { storageSet('wstreak', value); }
 
 // --- Preferences ---
 
-function getMuted()           { return storageGet('wmute', '0') === '1'; }
-function saveMuted(value)     { storageSet('wmute', value ? '1' : '0'); }
+function getMuted() { return storageGet('wmute', '0') === '1'; }
+function saveMuted(value) { storageSet('wmute', value ? '1' : '0'); }
 
-function getPatternMode()       { return storageGet('wpat', '0') === '1'; }
+function getPatternMode() { return storageGet('wpat', '0') === '1'; }
 function savePatternMode(value) { storageSet('wpat', value ? '1' : '0'); }
 
-function getSavedLevel()      { return parseInt(storageGet('wsp_level', 1)) || 1; }
-function saveLevel(level)     { storageSet('wsp_level', level); }
+function getSavedLevel() { return parseInt(storageGet('wsp_level', 1)) || 1; }
+function saveLevel(level) { storageSet('wsp_level', level); }
 
 // --- Stars ---
 
-function getBestStars(level)        { return parseInt(storageGet(`wstar${level}`, 0)) || 0; }
+function getBestStars(level) { return parseInt(storageGet(`wstar${level}`, 0)) || 0; }
 function saveBestStars(level, stars) {
   const prev = getBestStars(level);
   if (stars > prev) storageSet(`wstar${level}`, stars);
@@ -54,5 +54,10 @@ function saveBestStars(level, stars) {
 
 // --- Difficulty ---
 
-function getDifficulty()        { return storageGet('wdiff', 'normal'); }
-function saveDifficulty(value)  { storageSet('wdiff', value); }
+function getDifficulty() { return storageGet('wdiff', 'normal'); }
+function saveDifficulty(value) { storageSet('wdiff', value); }
+
+// --- Background ---
+
+function getBackground() { return storageGet('wbg', 'default'); }
+function saveBackground(value) { storageSet('wbg', value); }

@@ -30,11 +30,20 @@ const FONTS = {
   orbitron: "'Orbitron', sans-serif",
 };
 
+const BACKGROUNDS = [
+  { id: 'default', name: 'Nebula', url: null, colors: ['#0f0c29', '#302b63', '#24243e'] },
+  { id: 'forest', name: 'Forest', url: 'assets/forest-bg.png' },
+  { id: 'lava', name: 'Lava', url: 'assets/lava-bg.png' },
+  { id: 'minimalist', name: 'Minimalist', url: 'assets/minimalist-bg.png' },
+  { id: 'sea', name: 'Sea', url: 'assets/sea-bg.png' },
+  { id: 'space', name: 'Space', url: 'assets/space-bg.png' },
+];
+
 // Difficulty limits: undo cap and hints per tier
 const DIFFICULTY_LIMITS = {
-  easy:   { undos: Infinity, hints: 5 },
-  normal: { undos: 10,       hints: 3 },
-  hard:   { undos: 3,        hints: 2 },
+  easy: { undos: Infinity, hints: 5 },
+  normal: { undos: 10, hints: 3 },
+  hard: { undos: 3, hints: 2 },
 };
 
 // Difficulty ranges: E (empty bottles) per [band][CAP]
