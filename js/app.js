@@ -40,9 +40,10 @@ function App() {
   const [showSettings, setShowSettings] = React.useState(false);
   const [showMap, setShowMap] = React.useState(false);
   const [showAchievements, setShowAchievements] = React.useState(false);
+  const [showHome, setShowHome] = React.useState(true);
 
   // --- Timer ---
-  const timerRunning = !showWin && bottles.length > 0;
+  const timerRunning = !showWin && !showHome && bottles.length > 0;
   const { time, reset: resetTimer } = useTimer(timerRunning);
 
   // --- Audio helper ---
@@ -219,6 +220,13 @@ function App() {
   // --- Derived values ---
   const doneCount = bottles.filter((b, i) => isDoneBottle(b, revealed[i])).length;
   const undoLabel = undosLeft === Infinity ? "UNDO" : `UNDO ×${undosLeft}`;
+  const totalStars = React.useMemo(() => {
+    let sum = 0;
+    for (let i = 1; i <= level; i++) {
+      sum += getBestStars(i);
+    }
+    return sum;
+  }, [level]);
 
   const controls = [
     { fn: undo, dis: !history.length || undosLeft <= 0, label: undosLeft > 0 ? undoLabel : "—", icon: "↶" },
@@ -268,6 +276,25 @@ function App() {
       `}</style>
 
       <Stars />
+
+      <HomeScreen
+        show={showHome}
+        level={level}
+        totalStars={totalStars}
+        streak={streak}
+        difficulty={difficulty}
+        onPlay={() => {
+          setShowHome(false);
+          haptic();
+          play(soundTap);
+        }}
+        onOpenMap={() => {
+          setShowHome(false);
+          setShowMap(true);
+        }}
+        onOpenSettings={() => setShowSettings(true)}
+        onOpenAchievements={() => setShowAchievements(true)}
+      />
 
       <Header
         level={level}
