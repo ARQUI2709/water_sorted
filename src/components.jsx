@@ -3,7 +3,7 @@
 // ============================================
 
 import React from 'react';
-import { BOTTLE_CAPACITY, MAIN_COLORS, COLOR_NAMES, PATTERNS, FONTS, getColor } from './constants.js';
+import { BOTTLE_CAPACITY, MAIN_COLORS, COLOR_NAMES, PATTERNS, FONTS, UI, getColor } from './constants.js';
 
 // --------------------------------------------
 // Stars — animated background
@@ -21,7 +21,7 @@ export function Stars() {
     []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+    <div className="fixed inset-0 pointer-events-none" style={{ zIndex: UI.z.bg }}>
       {stars.map(s => (
         <div
           key={s.id}
@@ -58,7 +58,7 @@ export function Confetti() {
     []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 60 }}>
+    <div className="fixed inset-0 pointer-events-none overflow-hidden" style={{ zIndex: UI.z.confetti }}>
       {particles.map(p => (
         <div
           key={p.id}
@@ -87,6 +87,7 @@ export function Bottle({
   segments, revealedArr, selected, completed,
   onClick, hiddenCount, shaking, size,
   ghostCount, ghostColor, hinted, patMode,
+  index, pourIn, pourOut,
 }) {
   const w = size;
   const bR = Math.round(w * 0.25);
@@ -100,12 +101,17 @@ export function Bottle({
   const liquidPadX = Math.round(w * 0.9);
 
   return (
-    <div
+    <button
       onClick={onClick}
+      aria-label={`Bottle ${(index ?? 0) + 1}`}
+      aria-pressed={!!selected}
       className="relative"
       style={{
         width: imgW,
         height: imgH,
+        background: "none",
+        border: "none",
+        padding: 0,
         cursor: "pointer",
         WebkitTapHighlightColor: "transparent",
         transition: shaking ? "none" : "transform 0.15s ease-out, filter 0.15s ease-out",
@@ -116,8 +122,9 @@ export function Bottle({
           : completed ? `drop-shadow(0 0 6px ${doneColor}55)`
             : "none",
         animation: shaking ? "shake 0.3s ease-out"
-          : hinted ? "hintPulse 0.8s ease-in-out 2"
-            : "none",
+          : pourOut ? `${pourOut.dir > 0 ? "pourTiltR" : "pourTiltL"} 0.4s ease-out`
+            : hinted ? "hintPulse 0.8s ease-in-out 2"
+              : "none",
       }}
     >
       {/* Hint ring */}
@@ -149,9 +156,18 @@ export function Bottle({
             const bg = visible ? getColor(colorIndex) : "#1a1530";
             const isTop = i === segments.length - 1;
             const sliceH = Math.round(liquidH / BOTTLE_CAPACITY);
+            // Segments just received by a pour rise in with a slight stagger.
+            const fillIdx = pourIn ? i - (segments.length - pourIn.count) : -1;
 
             return (
-              <div key={i} className="relative" style={{ height: sliceH, backgroundColor: bg }}>
+              <div key={i} className="relative" style={{
+                height: sliceH,
+                backgroundColor: bg,
+                ...(fillIdx >= 0 ? {
+                  animation: `fillUp 0.3s ease-out ${0.05 + fillIdx * 0.06}s both`,
+                  transformOrigin: "bottom",
+                } : {}),
+              }}>
                 {isTop && visible && (
                   <div className="absolute top-0 left-0 right-0" style={{
                     height: Math.max(2, sliceH * 0.1),
@@ -184,6 +200,21 @@ export function Bottle({
               </div>
             );
           })}
+
+          {/* Drain overlay — liquid that just left this bottle fades out above the new top */}
+          {pourOut && pourOut.count > 0 &&
+            Array.from({ length: pourOut.count }, (_, di) => {
+              const sliceH = Math.round(liquidH / BOTTLE_CAPACITY);
+              return (
+                <div key={`d${pourOut.key}-${di}`} className="pointer-events-none" style={{
+                  height: sliceH,
+                  backgroundColor: getColor(pourOut.color),
+                  animation: "drainOut 0.3s ease-in forwards",
+                  transformOrigin: "top",
+                }} />
+              );
+            })
+          }
 
           {/* Ghost pour preview */}
           {ghostCount > 0 && ghostColor !== null &&
@@ -242,7 +273,7 @@ export function Bottle({
           </div>
         </div>
       )}
-    </div>
+    </button>
   );
 }
 

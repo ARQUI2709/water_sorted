@@ -3,7 +3,7 @@
 // ============================================
 
 import React from 'react';
-import { BACKGROUNDS, BOTTLE_CAPACITY, DIFFICULTY_LIMITS } from './constants.js';
+import { BACKGROUNDS, BOTTLE_CAPACITY, DIFFICULTY_LIMITS, UI } from './constants.js';
 import {
   soundTap, soundPour, soundError, soundWin, soundDone,
   haptic, hapticError, hapticWin,
@@ -14,14 +14,17 @@ import {
   getMuted, saveMuted, getPatternMode, savePatternMode,
   getDifficulty, saveDifficulty, getBackground, saveBackground,
   getBestMoves, saveBestMoves, getBestStars, saveBestStars,
+  getTutorialSeen, saveTutorialSeen, getLegendSeen, saveLegendSeen,
 } from './storage.js';
 import {
   generateLevel, canPour, pour, pourCount, topColor,
   isDoneBottle, isWinCondition, isDeadlocked, findHint, calculateLayout,
 } from './game.js';
 import { starsFromMoves, movesLowerBound } from './solver.js';
-import { useTimer } from './hooks.js';
+import { useTimer, useWakeLock } from './hooks.js';
 import { Stars } from './components.jsx';
+import { Toast } from './components/chrome.jsx';
+import { Tutorial } from './views/tutorial.jsx';
 import { Header } from './views/header.jsx';
 import { BottomControls } from './views/controls.jsx';
 import { GameBoard } from './views/game-board.jsx';
@@ -80,10 +83,32 @@ export default function App() {
   const [showMap, setShowMap] = React.useState(false);
   const [showAchievements, setShowAchievements] = React.useState(false);
   const [showHome, setShowHome] = React.useState(true);
+  const [showTutorial, setShowTutorial] = React.useState(false);
+
+  // --- Transient UI feedback ---
+  // Cosmetic pour-animation record; game state is committed instantly, so
+  // rapid taps / undo / win detection never wait on the animation.
+  const [lastPour, setLastPour] = React.useState(null);
+  const pourTimerRef = React.useRef(null);
+  // Remount key for the bottle grid: bumping it replays the entrance
+  // animation (new level, retry, undo).
+  const [boardKey, setBoardKey] = React.useState(0);
+  const [hintPending, setHintPending] = React.useState(false);
+  const [toast, setToast] = React.useState(null);
+  const toastTimerRef = React.useRef(null);
+
+  const showToast = React.useCallback((msg) => {
+    setToast(msg);
+    clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setToast(null), 1800);
+  }, []);
 
   // --- Timer ---
   const timerRunning = !showWin && !showHome && bottles.length > 0;
   const { time, reset: resetTimer } = useTimer(timerRunning);
+
+  // Keep the screen awake while a puzzle is on screen
+  useWakeLock(!showHome && bottles.length > 0);
 
   // --- Audio helper ---
   const play = React.useCallback((fn) => { if (!muted) fn(); }, [muted]);
@@ -123,7 +148,11 @@ export default function App() {
     });
   }, []);
 
-  React.useEffect(() => () => { workerRef.current?.terminate(); }, []);
+  React.useEffect(() => () => {
+    workerRef.current?.terminate();
+    clearTimeout(pourTimerRef.current);
+    clearTimeout(toastTimerRef.current);
+  }, []);
 
   // --- Layout on resize ---
   const boardRef = React.useRef(null);
@@ -159,6 +188,13 @@ export default function App() {
     setBest(getBestMoves(lvl));
     setShaking(null);
     setHint(null);
+    setLastPour(null);
+    setBoardKey(k => k + 1);
+    // Surface the legend once, the first time a busy palette shows up.
+    if (g.numColors >= 7 && !getLegendSeen()) {
+      setLegendOpen(true);
+      saveLegendSeen();
+    }
     const limits = DIFFICULTY_LIMITS[tier] || DIFFICULTY_LIMITS.normal;
     setHintsLeft(limits.hints);
     setUndosLeft(limits.undos);
@@ -224,6 +260,18 @@ export default function App() {
       setMoves(m => m + 1);
       play(soundPour);
 
+      // Cosmetic pour animation: record what moved, clear after it plays.
+      setLastPour({
+        from: selected,
+        to: idx,
+        count: pourCount(bottles, selected, idx),
+        color: topColor(bottles[selected]),
+        dir: idx > selected ? 1 : -1,
+        key: Date.now(),
+      });
+      clearTimeout(pourTimerRef.current);
+      pourTimerRef.current = setTimeout(() => setLastPour(null), 600);
+
       const result = pour(bottles, revealed, selected, idx);
       setBottles(result.bottles);
       setRevealed(result.revealed);
@@ -272,13 +320,16 @@ export default function App() {
     setSelected(null);
     setHint(null);
     setUndosLeft(u => u - 1);
+    setLastPour(null);
+    setBoardKey(k => k + 1);
   }, [history, play, undosLeft]);
 
   const restart = React.useCallback(() => {
+    if (streak > 0) showToast("Streak reset");
     setStreak(0); saveStreak(0);
     initLevel(level);
     play(soundTap);
-  }, [level, initLevel, play]);
+  }, [level, initLevel, play, streak, showToast]);
 
   // Hint: ask the solver for the first move of an optimal solution from the
   // current position; fall back to the scored heuristic when it can't.
@@ -286,9 +337,11 @@ export default function App() {
   const doHint = React.useCallback(() => {
     if (hintsLeft <= 0 || hintPendingRef.current) return;
     hintPendingRef.current = true;
+    setHintPending(true);
     const snapshot = bottles;
     requestSolve(snapshot.map(b => [...b]), { maxNodes: 150000, timeLimitMs: 2000 }).then(res => {
       hintPendingRef.current = false;
+      setHintPending(false);
       if (bottlesRef.current !== snapshot) return; // board changed meanwhile
       const h = (res.status === 'solved' && res.firstMove) ? res.firstMove : findHint(snapshot);
       if (h) {
@@ -318,7 +371,6 @@ export default function App() {
 
   // --- Derived values ---
   const doneCount = bottles.filter((b, i) => isDoneBottle(b, revealed[i])).length;
-  const undoLabel = undosLeft === Infinity ? "UNDO" : `UNDO ×${undosLeft}`;
   const totalStars = React.useMemo(() => {
     let sum = 0;
     for (let i = 1; i <= maxLevel; i++) {
@@ -328,13 +380,11 @@ export default function App() {
     // bestStars is a dep so the total refreshes right after a win
   }, [maxLevel, bestStars]);
 
+  // Gameplay actions only — sound and colorblind toggles live in Settings.
   const controls = [
-    { fn: undo, dis: !history.length || undosLeft <= 0, label: undosLeft > 0 ? undoLabel : "—", icon: "↶" },
-    { fn: doHint, dis: deadlock || hintsLeft <= 0, label: hintsLeft > 0 ? `HINT ×${hintsLeft}` : "—", icon: "?" },
+    { fn: undo, dis: !history.length || undosLeft <= 0, label: "UNDO", icon: "↶", count: undosLeft },
+    { fn: doHint, dis: deadlock || hintsLeft <= 0 || hintPending, label: "HINT", icon: hintPending ? "…" : "?", count: hintsLeft, pending: hintPending },
     { fn: restart, label: "RETRY", icon: "⟳" },
-    { fn: () => { setStreak(0); saveStreak(0); setLevel(1); haptic(); }, label: "LV.1", icon: "1" },
-    { fn: () => setMuted(m => { saveMuted(!m); return !m; }), label: muted ? "SOUND" : "MUTE", icon: "♪" },
-    { fn: () => setPatMode(p => { savePatternMode(!p); return !p; }), label: patMode ? "COLOR" : "A11Y", icon: patMode ? "●" : "◑" },
     { fn: () => { setLevel(l => l + 1); haptic(); }, label: "SKIP", icon: "»" },
   ];
 
@@ -367,6 +417,10 @@ export default function App() {
           setShowHome(false);
           haptic();
           play(soundTap);
+          if (!getTutorialSeen()) {
+            setShowTutorial(true);
+            saveTutorialSeen();
+          }
         }}
         onOpenMap={() => {
           setShowHome(false);
@@ -409,6 +463,11 @@ export default function App() {
         onBgTap={handleBgTap}
         onTapBottle={handleTap}
         getGhost={getGhost}
+        boardKey={boardKey}
+        lastPour={lastPour}
+        onUndo={undo}
+        onRestart={restart}
+        canUndo={history.length > 0 && undosLeft > 0}
       />
 
       <BottomControls controls={controls} />
@@ -421,6 +480,8 @@ export default function App() {
         time={time}
         streak={streak}
         onNext={nextLevel}
+        onReplay={restart}
+        onOpenMap={() => setShowMap(true)}
       />
 
       <LevelMap
@@ -428,7 +489,10 @@ export default function App() {
         onClose={() => setShowMap(false)}
         currentLevel={level}
         maxLevel={maxLevel}
-        onSelectLevel={n => { setStreak(0); saveStreak(0); setLevel(n); setShowMap(false); haptic(); }}
+        onSelectLevel={n => {
+          if (streak > 0 && n !== level) showToast("Streak reset");
+          setStreak(0); saveStreak(0); setLevel(n); setShowMap(false); haptic();
+        }}
       />
 
       <SettingsModal
@@ -445,7 +509,12 @@ export default function App() {
           setBackgroundId(id);
           saveBackground(id);
         }}
+        muted={muted}
+        onToggleMuted={() => setMuted(m => { saveMuted(!m); return !m; })}
+        patMode={patMode}
+        onTogglePatMode={() => setPatMode(p => { savePatternMode(!p); return !p; })}
         onOpenAchievements={() => { setShowSettings(false); setShowAchievements(true); }}
+        onOpenTutorial={() => { setShowSettings(false); setShowTutorial(true); }}
       />
 
       <AchievementsScreen
@@ -453,18 +522,25 @@ export default function App() {
         onClose={() => setShowAchievements(false)}
       />
 
+      <Tutorial
+        show={showTutorial}
+        onClose={() => setShowTutorial(false)}
+      />
+
+      <Toast message={toast} />
+
       {/* Decorative blurs */}
       <div className="fixed pointer-events-none" style={{
         width: 140, height: 140, borderRadius: "50%",
         background: "radial-gradient(circle, rgba(139,92,246,0.08), transparent 70%)",
         top: "6%", right: "-4%", filter: "blur(35px)",
-        animation: "float 6s ease-in-out infinite", zIndex: 0,
+        animation: "float 6s ease-in-out infinite", zIndex: UI.z.bg,
       }} />
       <div className="fixed pointer-events-none" style={{
         width: 100, height: 100, borderRadius: "50%",
         background: "radial-gradient(circle, rgba(99,102,241,0.06), transparent 70%)",
         bottom: "10%", left: "-3%", filter: "blur(25px)",
-        animation: "float 8s ease-in-out 2s infinite", zIndex: 0,
+        animation: "float 8s ease-in-out 2s infinite", zIndex: UI.z.bg,
       }} />
     </div>
   );

@@ -1,18 +1,65 @@
 // ============================================
-// SETTINGS MODAL — gear menu with difficulty
+// SETTINGS MODAL — difficulty, background, preferences
 // ============================================
 
 import React from 'react';
-import { FONTS, BACKGROUNDS } from '../constants.js';
+import { FONTS, BACKGROUNDS, UI } from '../constants.js';
+import { ModalCard } from '../components/chrome.jsx';
+
+function SectionLabel({ children }) {
+  return (
+    <div style={{
+      fontSize: UI.font.xs, fontFamily: FONTS.default, fontWeight: 600,
+      color: UI.text.muted, marginBottom: 8, textTransform: "uppercase",
+      letterSpacing: "0.08em",
+    }}>
+      {children}
+    </div>
+  );
+}
+
+function ToggleRow({ icon, label, on, onToggle }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-pressed={on}
+      className="w-full flex items-center justify-between py-2.5 px-3 mb-2 active:scale-95"
+      style={{
+        background: UI.surface.base,
+        border: UI.border.subtle,
+        borderRadius: UI.radius.md,
+        transition: "all 0.15s ease",
+        cursor: "pointer",
+      }}
+    >
+      <span style={{
+        fontFamily: FONTS.default, fontSize: UI.font.md, fontWeight: 600,
+        color: UI.text.secondary,
+      }}>
+        {icon} {label}
+      </span>
+      <span style={{
+        fontFamily: FONTS.default, fontSize: UI.font.xs, fontWeight: 700,
+        padding: "2px 10px",
+        borderRadius: UI.radius.pill,
+        background: on ? "rgba(74,222,128,0.15)" : UI.surface.base,
+        border: on ? "1px solid rgba(74,222,128,0.4)" : UI.border.subtle,
+        color: on ? "#4ade80" : UI.text.muted,
+      }}>
+        {on ? "ON" : "OFF"}
+      </span>
+    </button>
+  );
+}
 
 export function SettingsModal({
   show, onClose,
   difficulty, onChangeDifficulty,
   backgroundId, onChangeBackground,
-  onOpenAchievements
+  muted, onToggleMuted,
+  patMode, onTogglePatMode,
+  onOpenAchievements, onOpenTutorial,
 }) {
-  if (!show) return null;
-
   const tiers = [
     { key: 'easy', label: 'EASY', color: '#4ade80', desc: 'More empty bottles' },
     { key: 'normal', label: 'NORMAL', color: '#facc15', desc: 'Balanced' },
@@ -20,148 +67,128 @@ export function SettingsModal({
   ];
 
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center px-6"
-      style={{ zIndex: 70, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      <div
-        className="p-5 rounded-2xl w-full max-w-xs"
-        style={{
-          background: "linear-gradient(160deg, rgba(30,20,60,0.97), rgba(20,15,45,0.97))",
-          border: "1px solid rgba(255,255,255,0.12)",
-          animation: "bounceIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards",
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <h3 className="font-bold text-center mb-4" style={{
-          fontFamily: FONTS.orbitron,
-          fontSize: "1rem",
-          color: "rgba(255,255,255,0.85)",
-        }}>
-          SETTINGS
-        </h3>
+    <ModalCard show={show} onClose={onClose} title="SETTINGS">
+      {/* Difficulty */}
+      <SectionLabel>Difficulty</SectionLabel>
+      <div className="flex gap-2 mb-2">
+        {tiers.map(t => {
+          const active = difficulty === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => onChangeDifficulty(t.key)}
+              aria-pressed={active}
+              className="flex-1 flex flex-col items-center py-2.5 active:scale-95"
+              style={{
+                background: active
+                  ? `linear-gradient(135deg, ${t.color}22, ${t.color}11)`
+                  : UI.surface.base,
+                border: active
+                  ? `2px solid ${t.color}88`
+                  : UI.border.subtle,
+                borderRadius: UI.radius.md,
+                transition: "all 0.15s ease",
+              }}
+            >
+              <span style={{
+                fontFamily: FONTS.orbitron,
+                fontSize: UI.font.xs,
+                fontWeight: 700,
+                color: active ? t.color : UI.text.muted,
+              }}>
+                {t.label}
+              </span>
+              <span style={{
+                fontSize: UI.font.xs,
+                fontFamily: FONTS.default,
+                color: active ? `${t.color}aa` : UI.text.muted,
+                marginTop: 2,
+              }}>
+                {t.desc}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Difficulty Section */}
-        <div style={{
-          fontSize: "0.7rem", fontFamily: FONTS.default, fontWeight: 600,
-          color: "rgba(255,255,255,0.45)", marginBottom: 8, textTransform: "uppercase",
-          letterSpacing: "0.08em",
-        }}>
-          Difficulty
-        </div>
+      <div style={{
+        fontSize: UI.font.xs, fontFamily: FONTS.default,
+        color: UI.text.muted, marginBottom: 16,
+      }}>
+        Applies from the next level — the current level keeps its layout.
+      </div>
 
-        <div className="flex gap-2 mb-2">
-          {tiers.map(t => {
-            const active = difficulty === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => onChangeDifficulty(t.key)}
-                className="flex-1 flex flex-col items-center py-2.5 rounded-xl active:scale-95"
-                style={{
-                  background: active
-                    ? `linear-gradient(135deg, ${t.color}22, ${t.color}11)`
-                    : "rgba(255,255,255,0.05)",
-                  border: active
-                    ? `2px solid ${t.color}88`
-                    : "1px solid rgba(255,255,255,0.08)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <span style={{
-                  fontFamily: FONTS.orbitron,
-                  fontSize: "0.7rem",
-                  fontWeight: 700,
-                  color: active ? t.color : "rgba(255,255,255,0.5)",
-                }}>
-                  {t.label}
-                </span>
-                <span style={{
-                  fontSize: "0.55rem",
-                  fontFamily: FONTS.default,
-                  color: active ? `${t.color}aa` : "rgba(255,255,255,0.25)",
-                  marginTop: 2,
-                }}>
-                  {t.desc}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      {/* Background */}
+      <SectionLabel>Background</SectionLabel>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {BACKGROUNDS.map(bg => {
+          const active = backgroundId === bg.id;
+          return (
+            <button
+              key={bg.id}
+              onClick={() => onChangeBackground(bg.id)}
+              aria-pressed={active}
+              className="py-2.5 active:scale-95 text-center"
+              style={{
+                background: active ? UI.surface.active : UI.surface.base,
+                border: active ? UI.border.strong : UI.border.subtle,
+                borderRadius: UI.radius.md,
+                transition: "all 0.15s ease",
+              }}
+            >
+              <div style={{
+                fontFamily: FONTS.default,
+                fontSize: UI.font.xs,
+                fontWeight: 600,
+                color: active ? "#fff" : UI.text.muted,
+              }}>
+                {bg.name}
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
-        <div style={{
-          fontSize: "0.6rem", fontFamily: FONTS.default,
-          color: "rgba(255,255,255,0.3)", marginBottom: 16,
-        }}>
-          Applies from the next level — the current level keeps its layout.
-        </div>
+      {/* Preferences */}
+      <SectionLabel>Preferences</SectionLabel>
+      <ToggleRow icon="🔊" label="Sound" on={!muted} onToggle={onToggleMuted} />
+      <ToggleRow icon="◑" label="Colorblind patterns" on={patMode} onToggle={onTogglePatMode} />
 
-        {/* Background Section */}
-        <div style={{
-          fontSize: "0.7rem", fontFamily: FONTS.default, fontWeight: 600,
-          color: "rgba(255,255,255,0.45)", marginBottom: 8, textTransform: "uppercase",
-          letterSpacing: "0.08em",
-        }}>
-          Background
-        </div>
+      <div style={{ height: 8 }} />
 
-        <div className="grid grid-cols-3 gap-2 mb-6">
-          {BACKGROUNDS.map(bg => {
-            const active = backgroundId === bg.id;
-            return (
-              <button
-                key={bg.id}
-                onClick={() => onChangeBackground(bg.id)}
-                className="py-2.5 rounded-xl active:scale-95 text-center"
-                style={{
-                  background: active ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)",
-                  border: active ? "1px solid rgba(255,255,255,0.4)" : "1px solid rgba(255,255,255,0.08)",
-                  transition: "all 0.15s ease",
-                }}
-              >
-                <div style={{
-                  fontFamily: FONTS.default,
-                  fontSize: "0.65rem",
-                  fontWeight: 600,
-                  color: active ? "#fff" : "rgba(255,255,255,0.5)",
-                }}>
-                  {bg.name}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {onOpenAchievements && (
-          <button
-            onClick={onOpenAchievements}
-            className="w-full py-2.5 rounded-xl font-semibold active:scale-95 mb-2 flex items-center justify-center gap-2"
-            style={{
-              background: "rgba(251,191,36,0.08)",
-              border: "1px solid rgba(251,191,36,0.15)",
-              color: "#fbbf24",
-              fontSize: "0.85rem",
-              fontFamily: FONTS.orbitron,
-            }}
-          >
-            🏆 Achievements
-          </button>
-        )}
-
+      {onOpenAchievements && (
         <button
-          onClick={onClose}
-          className="w-full py-2.5 rounded-xl font-semibold active:scale-95"
+          onClick={onOpenAchievements}
+          className="w-full py-2.5 font-semibold active:scale-95 mb-2 flex items-center justify-center gap-2"
           style={{
-            background: "rgba(255,255,255,0.08)",
-            color: "rgba(255,255,255,0.6)",
-            fontSize: "0.85rem",
-            fontFamily: FONTS.default,
+            background: "rgba(251,191,36,0.08)",
+            border: "1px solid rgba(251,191,36,0.15)",
+            color: UI.accent.gold,
+            fontSize: UI.font.md,
+            fontFamily: FONTS.orbitron,
+            borderRadius: UI.radius.md,
           }}
         >
-          Close
+          🏆 Achievements
         </button>
-      </div>
-    </div>
+      )}
+
+      {onOpenTutorial && (
+        <button
+          onClick={onOpenTutorial}
+          className="w-full py-2.5 font-semibold active:scale-95 mb-2 flex items-center justify-center gap-2"
+          style={{
+            background: UI.surface.base,
+            border: UI.border.subtle,
+            color: UI.text.secondary,
+            fontSize: UI.font.md,
+            fontFamily: FONTS.orbitron,
+            borderRadius: UI.radius.md,
+          }}
+        >
+          ❓ How to play
+        </button>
+      )}
+    </ModalCard>
   );
 }

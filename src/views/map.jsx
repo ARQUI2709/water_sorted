@@ -3,8 +3,9 @@
 // ============================================
 
 import React from 'react';
-import { FONTS } from '../constants.js';
+import { FONTS, UI } from '../constants.js';
 import { getBestStars } from '../storage.js';
+import { FullScreenPanel } from '../components/chrome.jsx';
 
 export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel }) {
   const scrollRef = React.useRef(null);
@@ -42,48 +43,49 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
     return d;
   }, [nodes]);
 
+  const scrollToCurrent = React.useCallback(() => {
+    currentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
+
   React.useEffect(() => {
     if (show && currentRef.current && scrollRef.current) {
-      setTimeout(() => {
-        currentRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
+      setTimeout(scrollToCurrent, 100);
     }
-  }, [show]);
+  }, [show, scrollToCurrent]);
 
   if (!show) return null;
 
   return (
-    <div
-      className="fixed inset-0 flex flex-col"
-      style={{
-        zIndex: 70,
-        background: "linear-gradient(160deg, rgba(15,12,41,0.97), rgba(48,43,99,0.97) 50%, rgba(36,36,62,0.97))",
-        backdropFilter: "blur(12px)",
-      }}
-    >
-      {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-3 pb-2"
-        style={{ paddingTop: "max(12px, env(safe-area-inset-top, 12px))" }}
-      >
-        <h2 className="font-bold" style={{
-          fontFamily: FONTS.orbitron, fontSize: "1rem",
-          background: "linear-gradient(135deg,#fff,#c084fc,#818cf8)",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+    <FullScreenPanel
+      show={show}
+      onClose={onClose}
+      title="LEVEL MAP"
+      footer={
+        <div className="shrink-0 flex justify-center" style={{
+          paddingTop: 8,
+          paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
         }}>
-          LEVEL MAP
-        </h2>
-        <button
-          onClick={onClose}
-          className="active:scale-90"
-          style={{
-            fontSize: "1.4rem", color: "rgba(255,255,255,0.5)",
-            lineHeight: 1, padding: 4,
-          }}
-        >
-          ✕
-        </button>
-      </div>
-
+          <button
+            onClick={scrollToCurrent}
+            className="px-4 py-2 active:scale-95"
+            style={{
+              background: UI.surface.raised,
+              border: UI.border.strong,
+              borderRadius: UI.radius.pill,
+              color: UI.text.primary,
+              fontFamily: FONTS.default,
+              fontSize: UI.font.sm,
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              cursor: "pointer",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+            }}
+          >
+            ● LEVEL {currentLevel} — CURRENT
+          </button>
+        </div>
+      }
+    >
       {/* Scrollable map */}
       <div
         ref={scrollRef}
@@ -138,16 +140,21 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
             const nodeSize = isCurrent ? 52 : 44;
 
             return (
-              <div
+              <button
                 key={n}
                 ref={isCurrent ? currentRef : null}
                 onClick={canTap ? () => onSelectLevel(n) : undefined}
+                disabled={!canTap}
+                aria-label={isLocked ? `Level ${n}, locked` : `Level ${n}${s > 0 ? `, ${s} stars` : ''}${isCurrent ? ', current' : ''}`}
                 className="absolute flex flex-col items-center"
                 style={{
                   left: x - nodeSize / 2,
                   top: y - nodeSize / 2,
                   width: nodeSize,
-                  cursor: canTap ? "pointer" : "default",
+                  cursor: canTap ? "pointer" : "not-allowed",
+                  background: "none",
+                  border: "none",
+                  padding: 0,
                 }}
               >
                 <div
@@ -158,9 +165,9 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
                     background: isLocked
                       ? "rgba(255,255,255,0.04)"
                       : isCompleted && s > 0
-                        ? "linear-gradient(135deg, #fbbf24, #f59e0b)"
+                        ? UI.accent.goldGrad
                         : isCompleted
-                          ? "linear-gradient(135deg, #8b5cf6, #6366f1)"
+                          ? UI.accent.primaryGrad
                           : "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.3))",
                     border: isLocked
                       ? "2px solid rgba(255,255,255,0.08)"
@@ -198,10 +205,10 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
                 </div>
 
                 {isCompleted && s > 0 && (
-                  <div className="flex gap-px mt-1" style={{ fontSize: "0.65rem" }}>
+                  <div className="flex gap-px mt-1" style={{ fontSize: UI.font.xs }}>
                     {[1, 2, 3].map(i => (
                       <span key={i} style={{
-                        color: i <= s ? "#fbbf24" : "rgba(255,255,255,0.15)",
+                        color: i <= s ? UI.accent.gold : "rgba(255,255,255,0.15)",
                         textShadow: i <= s ? "0 0 4px rgba(251,191,36,0.4)" : "none",
                       }}>★</span>
                     ))}
@@ -210,10 +217,10 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
 
                 {isCurrent && (
                   <div style={{
-                    fontSize: "0.55rem",
+                    fontSize: UI.font.xs,
                     fontFamily: FONTS.default,
                     fontWeight: 700,
-                    color: "rgba(255,255,255,0.6)",
+                    color: UI.text.secondary,
                     marginTop: 2,
                     textTransform: "uppercase",
                     letterSpacing: "0.05em",
@@ -221,11 +228,11 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
                     Current
                   </div>
                 )}
-              </div>
+              </button>
             );
           })}
         </div>
       </div>
-    </div>
+    </FullScreenPanel>
   );
 }

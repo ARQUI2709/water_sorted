@@ -3,8 +3,9 @@
 // ============================================
 
 import React from 'react';
-import { FONTS } from '../constants.js';
+import { FONTS, UI } from '../constants.js';
 import { getMaxLevel, getBestMoves, getBestStars, getBestStreak, getHardWins } from '../storage.js';
+import { FullScreenPanel } from '../components/chrome.jsx';
 
 // Achievement definitions
 export const ACHIEVEMENTS = [
@@ -49,43 +50,18 @@ export function AchievementsScreen({ show, onClose }) {
   const locked = ACHIEVEMENTS.filter(a => !a.check(stats));
 
   return (
-    <div
-      className="fixed inset-0 flex flex-col"
-      style={{
-        zIndex: 70,
-        background: "linear-gradient(160deg, rgba(15,12,41,0.97), rgba(48,43,99,0.97) 50%, rgba(36,36,62,0.97))",
-        backdropFilter: "blur(12px)",
-      }}
+    <FullScreenPanel
+      show={show}
+      onClose={onClose}
+      title="ACHIEVEMENTS"
+      titleGradient="linear-gradient(135deg,#fff,#fbbf24,#f59e0b)"
     >
-      {/* Header */}
-      <div className="shrink-0 flex items-center justify-between px-4 pt-3 pb-2"
-        style={{ paddingTop: "max(12px, env(safe-area-inset-top, 12px))" }}
-      >
-        <h2 className="font-bold" style={{
-          fontFamily: FONTS.orbitron, fontSize: "1rem",
-          background: "linear-gradient(135deg,#fff,#fbbf24,#f59e0b)",
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-        }}>
-          ACHIEVEMENTS
-        </h2>
-        <button
-          onClick={onClose}
-          className="active:scale-90"
-          style={{
-            fontSize: "1.4rem", color: "rgba(255,255,255,0.5)",
-            lineHeight: 1, padding: 4,
-          }}
-        >
-          ✕
-        </button>
-      </div>
-
       {/* Progress bar */}
       <div className="px-4 pb-3">
         <div className="flex items-center gap-2 mb-1">
           <span style={{
-            fontFamily: FONTS.default, fontSize: "0.75rem",
-            color: "rgba(255,255,255,0.5)", fontWeight: 600,
+            fontFamily: FONTS.default, fontSize: UI.font.sm,
+            color: UI.text.secondary, fontWeight: 600,
           }}>
             {unlocked.length}/{ACHIEVEMENTS.length} unlocked
           </span>
@@ -96,7 +72,7 @@ export function AchievementsScreen({ show, onClose }) {
           <div className="rounded-full" style={{
             height: 6,
             width: `${(unlocked.length / ACHIEVEMENTS.length) * 100}%`,
-            background: "linear-gradient(90deg, #fbbf24, #f59e0b)",
+            background: UI.accent.goldGrad,
             transition: "width 0.4s ease",
           }} />
         </div>
@@ -106,55 +82,56 @@ export function AchievementsScreen({ show, onClose }) {
       <div className="flex-1 overflow-y-auto px-4 pb-4" style={{ WebkitOverflowScrolling: "touch" }}>
         {/* Unlocked */}
         {unlocked.map(a => (
-          <div key={a.id} className="flex items-center gap-3 p-3 mb-2 rounded-xl" style={{
+          <div key={a.id} className="flex items-center gap-3 p-3 mb-2" style={{
             background: "rgba(251,191,36,0.08)",
             border: "1px solid rgba(251,191,36,0.2)",
+            borderRadius: UI.radius.md,
           }}>
             <span style={{ fontSize: "1.5rem" }}>{a.icon}</span>
             <div className="flex-1 min-w-0">
               <div style={{
-                fontFamily: FONTS.orbitron, fontSize: "0.75rem",
-                fontWeight: 700, color: "#fbbf24",
+                fontFamily: FONTS.orbitron, fontSize: UI.font.sm,
+                fontWeight: 700, color: UI.accent.gold,
               }}>
                 {a.title}
               </div>
               <div style={{
-                fontFamily: FONTS.default, fontSize: "0.65rem",
-                color: "rgba(255,255,255,0.5)",
+                fontFamily: FONTS.default, fontSize: UI.font.xs,
+                color: UI.text.secondary,
               }}>
                 {a.desc}
               </div>
             </div>
-            <span style={{ color: "#fbbf24", fontSize: "1rem" }}>✓</span>
+            <span style={{ color: UI.accent.gold, fontSize: UI.font.lg }}>✓</span>
           </div>
         ))}
 
-        {/* Locked */}
+        {/* Locked — grayscale icons but readable text (no washed-out wrapper opacity) */}
         {locked.map(a => (
-          <div key={a.id} className="flex items-center gap-3 p-3 mb-2 rounded-xl" style={{
+          <div key={a.id} className="flex items-center gap-3 p-3 mb-2" style={{
             background: "rgba(255,255,255,0.03)",
             border: "1px solid rgba(255,255,255,0.06)",
-            opacity: 0.5,
+            borderRadius: UI.radius.md,
           }}>
-            <span style={{ fontSize: "1.5rem", filter: "grayscale(1)" }}>{a.icon}</span>
+            <span style={{ fontSize: "1.5rem", filter: "grayscale(1)", opacity: 0.6 }}>{a.icon}</span>
             <div className="flex-1 min-w-0">
               <div style={{
-                fontFamily: FONTS.orbitron, fontSize: "0.75rem",
-                fontWeight: 700, color: "rgba(255,255,255,0.4)",
+                fontFamily: FONTS.orbitron, fontSize: UI.font.sm,
+                fontWeight: 700, color: UI.text.secondary,
               }}>
                 {a.title}
               </div>
               <div style={{
-                fontFamily: FONTS.default, fontSize: "0.65rem",
-                color: "rgba(255,255,255,0.25)",
+                fontFamily: FONTS.default, fontSize: UI.font.xs,
+                color: UI.text.muted,
               }}>
                 {a.desc}
               </div>
             </div>
-            <span style={{ color: "rgba(255,255,255,0.15)", fontSize: "1rem" }}>🔒</span>
+            <span style={{ color: UI.text.muted, fontSize: UI.font.lg }}>🔒</span>
           </div>
         ))}
       </div>
-    </div>
+    </FullScreenPanel>
   );
 }

@@ -127,3 +127,11 @@ export function saveDifficulty(value) { storageSet('wdiff', value); }
 
 export function getBackground() { return storageGet('wbg', 'default'); }
 export function saveBackground(value) { storageSet('wbg', value); }
+
+// --- One-time UI flags ---
+
+export function getTutorialSeen() { return storageGet('wtut', '0') === '1'; }
+export function saveTutorialSeen() { storageSet('wtut', '1'); }
+
+export function getLegendSeen() { return storageGet('wlegend', '0') === '1'; }
+export function saveLegendSeen() { storageSet('wlegend', '1'); }

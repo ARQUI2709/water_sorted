@@ -3,10 +3,11 @@
 // ============================================
 
 import React from 'react';
-import { FONTS } from '../constants.js';
+import { FONTS, UI } from '../constants.js';
 import { Confetti } from '../components.jsx';
+import { ModalCard } from '../components/chrome.jsx';
 
-export function WinScreen({ show, stars, moves, mopt, time, streak, onNext }) {
+export function WinScreen({ show, stars, moves, mopt, time, streak, onNext, onReplay, onOpenMap }) {
   if (!show) return null;
 
   const stats = [
@@ -19,22 +20,22 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext }) {
   return (
     <>
       <Confetti />
-      <div className="fixed inset-0 flex items-center justify-center px-6" style={{
-        zIndex: 50, background: "rgba(0,0,0,0.55)", backdropFilter: "blur(12px)",
-      }}>
-        <div className="text-center p-6 rounded-3xl w-full max-w-xs" style={{
-          background: "linear-gradient(160deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03))",
-          border: "1px solid rgba(255,255,255,0.12)",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
-          animation: "bounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",
-        }}>
+      <ModalCard
+        show={show}
+        title={null}
+        ariaLabel="Level complete"
+        backdropClose={false}
+        showClose={false}
+        zIndex={UI.z.win}
+      >
+        <div className="text-center">
           <div style={{ fontSize: "2.5rem", marginBottom: 6, animation: "float 2s ease-in-out infinite" }}>
             🎉
           </div>
 
           <h2 className="font-black tracking-wider mb-2" style={{
             fontFamily: FONTS.orbitron,
-            fontSize: "1.2rem",
+            fontSize: UI.font.xl,
             background: "linear-gradient(135deg,#fbbf24,#f59e0b,#fbbf24)",
             backgroundSize: "200% auto",
             WebkitBackgroundClip: "text",
@@ -45,13 +46,13 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext }) {
           </h2>
 
           {stars > 0 && (
-            <div className="flex justify-center gap-1 mb-2" style={{ fontSize: "1.6rem" }}>
+            <div className="flex justify-center gap-1 mb-3" style={{ fontSize: "1.6rem" }}>
               {[1, 2, 3].map(i => (
                 <span key={i} style={{
-                  color: i <= stars ? "#fbbf24" : "rgba(255,255,255,0.15)",
+                  color: i <= stars ? UI.accent.gold : "rgba(255,255,255,0.15)",
                   textShadow: i <= stars ? "0 0 8px rgba(251,191,36,0.5)" : "none",
-                  transition: "all 0.3s ease",
-                  animationDelay: `${i * 0.15}s`,
+                  animation: i <= stars ? `starPop 0.4s ease-out ${0.2 + i * 0.15}s both` : "none",
+                  display: "inline-block",
                 }}>
                   ★
                 </span>
@@ -59,15 +60,24 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext }) {
             </div>
           )}
 
-          <div className="flex justify-center gap-4 mb-4" style={{ fontFamily: FONTS.default }}>
+          {/* Stat tiles */}
+          <div className="flex justify-center gap-2 mb-4" style={{ fontFamily: FONTS.default }}>
             {stats.map((stat, i) => (
-              <div key={i} className="text-center">
-                <div style={{ fontSize: "1.3rem", color: stat.color || undefined }}
-                  className={`font-bold ${!stat.color ? "text-purple-200" : ""}`}
-                >
+              <div key={i} className="text-center px-3 py-2 flex-1" style={{
+                background: UI.surface.base,
+                border: UI.border.subtle,
+                borderRadius: UI.radius.sm,
+                minWidth: 0,
+              }}>
+                <div className="font-bold" style={{
+                  fontSize: "1.15rem",
+                  color: stat.color || "#ddd6fe",
+                  fontVariantNumeric: "tabular-nums",
+                  whiteSpace: "nowrap",
+                }}>
                   {stat.value}
                 </div>
-                <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.4)" }}>
+                <div style={{ fontSize: UI.font.xs, color: UI.text.muted }}>
                   {stat.label}
                 </div>
               </div>
@@ -76,20 +86,57 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext }) {
 
           <button
             onClick={onNext}
-            className="w-full py-3 rounded-2xl font-bold text-white active:scale-95"
+            className="w-full py-3 font-bold text-white active:scale-95"
             style={{
               fontFamily: FONTS.orbitron,
-              fontSize: "0.85rem",
-              background: "linear-gradient(135deg, #8b5cf6, #6366f1)",
+              fontSize: UI.font.md,
+              background: UI.accent.primaryGrad,
               boxShadow: "0 4px 16px rgba(139,92,246,0.35)",
               letterSpacing: "0.1em",
               minHeight: 48,
+              borderRadius: UI.radius.md,
             }}
           >
             NEXT LEVEL →
           </button>
+
+          {/* Secondary actions */}
+          <div className="flex gap-2 mt-2">
+            {onReplay && (
+              <button
+                onClick={onReplay}
+                className="flex-1 py-2 font-semibold active:scale-95"
+                style={{
+                  fontFamily: FONTS.default,
+                  fontSize: UI.font.sm,
+                  color: UI.text.secondary,
+                  background: UI.surface.base,
+                  border: UI.border.subtle,
+                  borderRadius: UI.radius.md,
+                }}
+              >
+                ↻ Replay
+              </button>
+            )}
+            {onOpenMap && (
+              <button
+                onClick={onOpenMap}
+                className="flex-1 py-2 font-semibold active:scale-95"
+                style={{
+                  fontFamily: FONTS.default,
+                  fontSize: UI.font.sm,
+                  color: UI.text.secondary,
+                  background: UI.surface.base,
+                  border: UI.border.subtle,
+                  borderRadius: UI.radius.md,
+                }}
+              >
+                🗺 Map
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      </ModalCard>
     </>
   );
 }

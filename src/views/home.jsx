@@ -3,8 +3,10 @@
 // ============================================
 
 import React from 'react';
-import { FONTS, MAIN_COLORS } from '../constants.js';
+import { FONTS, MAIN_COLORS, UI } from '../constants.js';
 import { Stars } from '../components.jsx';
+import { IconButton } from '../components/chrome.jsx';
+import Footer from '../components/Footer.jsx';
 
 export function HomeScreen({
   show, level, totalStars, streak, difficulty,
@@ -22,8 +24,9 @@ export function HomeScreen({
     { icon: '⚙',  label: 'SETTINGS', fn: onOpenSettings },
   ];
 
-  // Bottle icon dimensions (decorative)
-  const bw = 80;
+  // Bottle icon dimensions (decorative) — scales down on short viewports
+  const vh = typeof window !== "undefined" ? window.innerHeight : 720;
+  const bw = Math.min(80, Math.round(vh * 0.11));
   const bh = Math.round(bw * 2.8);
   const liqTop = Math.round(bh * 0.22);
   const liqH = Math.round(bh * 0.73);
@@ -34,7 +37,7 @@ export function HomeScreen({
     <div
       className="fixed inset-0 flex flex-col items-center justify-between select-none"
       style={{
-        zIndex: 40,
+        zIndex: UI.z.home,
         background: "linear-gradient(160deg, #0f0c29, #302b63 50%, #24243e)",
         paddingTop: "max(24px, env(safe-area-inset-top, 24px))",
         paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
@@ -99,7 +102,7 @@ export function HomeScreen({
       <h1 style={{
         fontFamily: FONTS.orbitron,
         fontWeight: 900,
-        fontSize: "2.2rem",
+        fontSize: "clamp(1.6rem, 8vw, 2.2rem)",
         background: "linear-gradient(135deg, #fff, #c084fc, #818cf8)",
         WebkitBackgroundClip: "text",
         WebkitTextFillColor: "transparent",
@@ -218,36 +221,11 @@ export function HomeScreen({
       {/* Bottom nav */}
       <div className="flex items-center gap-5">
         {navButtons.map((btn, i) => (
-          <button
-            key={i}
-            onClick={btn.fn}
-            className="flex flex-col items-center justify-center active:scale-90"
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              cursor: "pointer",
-              transition: "transform 0.15s",
-            }}
-          >
-            <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>
-              {btn.icon}
-            </span>
-            <span style={{
-              fontSize: "0.5rem",
-              color: "rgba(255,255,255,0.45)",
-              fontFamily: FONTS.default,
-              fontWeight: 700,
-              marginTop: 2,
-              letterSpacing: "0.03em",
-            }}>
-              {btn.label}
-            </span>
-          </button>
+          <IconButton key={i} icon={btn.icon} label={btn.label} onClick={btn.fn} size={60} />
         ))}
       </div>
+
+      <Footer styleContent={{ padding: "10px 16px 0" }} />
     </div>
   );
 }
