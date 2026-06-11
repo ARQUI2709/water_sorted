@@ -29,7 +29,9 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
       arr.push({ n, x, y, stars: s });
     }
     return arr;
-  }, [totalLevels, totalHeight]);
+    // `show` is a dep so stars earned since the last open are re-read;
+    // totalLevels alone can stay at its floor of 20 for whole sessions.
+  }, [totalLevels, totalHeight, show]);
 
   const pathD = React.useMemo(() => {
     if (!nodes.length) return "";
