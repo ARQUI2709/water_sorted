@@ -26,8 +26,8 @@ export const PATTERNS = [
 ];
 
 export const FONTS = {
-  default: "'Rajdhani', sans-serif",
-  orbitron: "'Orbitron', sans-serif",
+  default: "'Chewy', cursive",
+  orbitron: "'Chewy', cursive",
 };
 
 export const BACKGROUNDS = [
@@ -41,9 +41,9 @@ export const BACKGROUNDS = [
 
 // Difficulty limits: undo cap and hints per tier
 export const DIFFICULTY_LIMITS = {
-  easy: { undos: Infinity, hints: 5 },
-  normal: { undos: 10, hints: 3 },
-  hard: { undos: 3, hints: 2 },
+  easy:   { undos: Infinity, hints: 5, addBottles: 5 },
+  normal: { undos: 10,       hints: 3, addBottles: 3 },
+  hard:   { undos: 3,        hints: 2, addBottles: 1 },
 };
 
 // Difficulty ranges: E (empty bottles) per [band][CAP]

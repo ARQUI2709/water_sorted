@@ -1,5 +1,5 @@
 // ============================================
-// LEVEL MAP — visual level selector with path
+// LEVEL MAP — grid-based level selector
 // ============================================
 
 import React from 'react';
@@ -7,139 +7,66 @@ import { FONTS, UI } from '../constants.js';
 import { getBestStars } from '../storage.js';
 import { FullScreenPanel } from '../components/chrome.jsx';
 
+const COLS = 5;
+
 export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel }) {
-  const scrollRef = React.useRef(null);
   const currentRef = React.useRef(null);
 
-  const totalLevels = Math.max(20, maxLevel + 5);
-  const nodeSpacing = 90;
-  const amplitude = 80;
-  const svgWidth = 300;
-  const svgPadTop = 60;
-  const svgPadBot = 40;
-  const totalHeight = totalLevels * nodeSpacing + svgPadTop + svgPadBot;
-  const cx = svgWidth / 2;
+  const totalLevels = Math.max(60, maxLevel + 5);
 
-  const nodes = React.useMemo(() => {
+  const levels = React.useMemo(() => {
     const arr = [];
     for (let n = 1; n <= totalLevels; n++) {
-      const y = totalHeight - svgPadBot - ((n - 1) * nodeSpacing) - 24;
-      const x = cx + amplitude * Math.sin(n * 0.8);
       const s = getBestStars(n);
-      arr.push({ n, x, y, stars: s });
+      arr.push({
+        n,
+        stars: s,
+        isCompleted: n < maxLevel || s > 0,
+        isLocked: n > maxLevel,
+        isCurrent: n === currentLevel,
+      });
     }
     return arr;
-    // `show` is a dep so stars earned since the last open are re-read;
-    // totalLevels alone can stay at its floor of 20 for whole sessions.
-  }, [totalLevels, totalHeight, show]);
-
-  const pathD = React.useMemo(() => {
-    if (!nodes.length) return "";
-    let d = `M ${nodes[0].x} ${nodes[0].y}`;
-    for (let i = 1; i < nodes.length; i++) {
-      const prev = nodes[i - 1];
-      const curr = nodes[i];
-      const cpY = (prev.y + curr.y) / 2;
-      d += ` Q ${prev.x} ${cpY}, ${curr.x} ${curr.y}`;
-    }
-    return d;
-  }, [nodes]);
-
-  const scrollToCurrent = React.useCallback(() => {
-    currentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, []);
+    // `show` re-reads stars earned since last open
+  }, [totalLevels, show, currentLevel, maxLevel]);
 
   React.useEffect(() => {
-    if (show && currentRef.current && scrollRef.current) {
-      setTimeout(scrollToCurrent, 100);
+    if (show && currentRef.current) {
+      setTimeout(() => {
+        currentRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 120);
     }
-  }, [show, scrollToCurrent]);
+  }, [show]);
 
   if (!show) return null;
 
   return (
-    <FullScreenPanel
-      show={show}
-      onClose={onClose}
-      title="LEVEL MAP"
-      footer={
-        <div className="shrink-0 flex justify-center" style={{
-          paddingTop: 8,
-          paddingBottom: "max(12px, env(safe-area-inset-bottom, 12px))",
-        }}>
-          <button
-            onClick={scrollToCurrent}
-            className="px-4 py-2 active:scale-95"
-            style={{
-              background: UI.surface.raised,
-              border: UI.border.strong,
-              borderRadius: UI.radius.pill,
-              color: UI.text.primary,
-              fontFamily: FONTS.default,
-              fontSize: UI.font.sm,
-              fontWeight: 700,
-              letterSpacing: "0.05em",
-              cursor: "pointer",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-            }}
-          >
-            ● LEVEL {currentLevel} — CURRENT
-          </button>
-        </div>
-      }
-    >
-      {/* Scrollable map */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        <div className="relative mx-auto" style={{ width: svgWidth, height: totalHeight }}>
-          {/* SVG path */}
-          <svg
-            className="absolute inset-0 pointer-events-none"
-            width={svgWidth} height={totalHeight}
-            style={{ overflow: "visible" }}
-          >
-            <path
-              d={pathD}
-              fill="none"
-              stroke="rgba(255,255,255,0.08)"
-              strokeWidth="3"
-              strokeDasharray="8 6"
-              strokeLinecap="round"
-            />
-            {(() => {
-              const activePath = nodes.slice(0, maxLevel);
-              if (activePath.length < 2) return null;
-              let d = `M ${activePath[0].x} ${activePath[0].y}`;
-              for (let i = 1; i < activePath.length; i++) {
-                const prev = activePath[i - 1];
-                const curr = activePath[i];
-                const cpY = (prev.y + curr.y) / 2;
-                d += ` Q ${prev.x} ${cpY}, ${curr.x} ${curr.y}`;
-              }
-              return (
-                <path
-                  d={d}
-                  fill="none"
-                  stroke="rgba(139,92,246,0.3)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                />
-              );
-            })()}
-          </svg>
-
-          {/* Level nodes */}
-          {nodes.map(({ n, x, y, stars: s }) => {
-            const isCurrent = n === currentLevel;
-            // Lock/completion always follow the highest level ever reached,
-            // so replaying an earlier level never re-locks later ones.
-            const isCompleted = n < maxLevel || s > 0;
-            const isLocked = n > maxLevel;
+    <FullScreenPanel show={show} onClose={onClose} title="LEVELS">
+      <div className="flex-1 overflow-y-auto" style={{ padding: "12px 16px 48px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${COLS}, 1fr)`,
+            gap: 12,
+          }}
+        >
+          {levels.map(({ n, stars: s, isCompleted, isLocked, isCurrent }) => {
             const canTap = !isLocked;
-            const nodeSize = isCurrent ? 52 : 44;
+            const bg = isLocked
+              ? "linear-gradient(180deg, #6b7a8d 0%, #4a5568 55%, #374151 100%)"
+              : isCompleted && s > 0
+                ? "linear-gradient(180deg, #fde68a 0%, #f59e0b 50%, #b45309 100%)"
+                : isCurrent
+                  ? "linear-gradient(180deg, #67e8f9 0%, #22d3ee 45%, #0891b2 100%)"
+                  : "linear-gradient(180deg, #93c5fd 0%, #3b82f6 50%, #1d4ed8 100%)";
+
+            const shadow = isLocked
+              ? "0 5px 0 #1f2937, inset 0 1px 0 rgba(255,255,255,0.18)"
+              : isCompleted && s > 0
+                ? "0 5px 0 #92400e, inset 0 1px 0 rgba(255,255,255,0.35)"
+                : isCurrent
+                  ? "0 5px 0 #0e7490, 0 0 18px rgba(34,211,238,0.45), inset 0 1px 0 rgba(255,255,255,0.45)"
+                  : "0 5px 0 #1e40af, inset 0 1px 0 rgba(255,255,255,0.3)";
 
             return (
               <button
@@ -147,88 +74,58 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
                 ref={isCurrent ? currentRef : null}
                 onClick={canTap ? () => onSelectLevel(n) : undefined}
                 disabled={!canTap}
-                aria-label={isLocked ? `Level ${n}, locked` : `Level ${n}${s > 0 ? `, ${s} stars` : ''}${isCurrent ? ', current' : ''}`}
-                className="absolute flex flex-col items-center"
+                aria-label={
+                  isLocked
+                    ? `Level ${n}, locked`
+                    : `Level ${n}${s > 0 ? `, ${s} stars` : ""}${isCurrent ? ", current" : ""}`
+                }
+                className="active:scale-95"
                 style={{
-                  left: x - nodeSize / 2,
-                  top: y - nodeSize / 2,
-                  width: nodeSize,
-                  cursor: canTap ? "pointer" : "not-allowed",
-                  background: "none",
-                  border: "none",
+                  aspectRatio: "1",
+                  borderRadius: 18,
+                  border: isCurrent
+                    ? "2.5px solid rgba(255,255,255,0.75)"
+                    : isLocked
+                      ? "2px solid rgba(255,255,255,0.08)"
+                      : "2px solid rgba(255,255,255,0.22)",
                   padding: 0,
+                  cursor: canTap ? "pointer" : "default",
+                  background: bg,
+                  boxShadow: shadow,
+                  transition: "transform 0.1s",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 3,
                 }}
               >
-                <div
-                  className="flex items-center justify-center rounded-full"
-                  style={{
-                    width: nodeSize,
-                    height: nodeSize,
-                    background: isLocked
-                      ? "rgba(255,255,255,0.04)"
-                      : isCompleted && s > 0
-                        ? UI.accent.goldGrad
-                        : isCompleted
-                          ? UI.accent.primaryGrad
-                          : "linear-gradient(135deg, rgba(139,92,246,0.3), rgba(99,102,241,0.3))",
-                    border: isLocked
-                      ? "2px solid rgba(255,255,255,0.08)"
-                      : isCurrent
-                        ? "2px solid rgba(255,255,255,0.7)"
-                        : isCompleted && s > 0
-                          ? "2px solid rgba(251,191,36,0.6)"
-                          : "2px solid rgba(139,92,246,0.4)",
-                    boxShadow: isCurrent
-                      ? "0 0 16px rgba(139,92,246,0.5), 0 0 4px rgba(255,255,255,0.3)"
-                      : isCompleted && s > 0
-                        ? "0 0 10px rgba(251,191,36,0.25)"
-                        : "none",
-                    animation: isCurrent ? "pulse 2s ease-in-out infinite" : "none",
-                    transition: "transform 0.15s",
-                  }}
-                >
-                  {isLocked ? (
-                    <span style={{
-                      fontSize: nodeSize * 0.35,
-                      color: "rgba(255,255,255,0.15)",
-                    }}>
-                      🔒
-                    </span>
-                  ) : (
+                {isLocked ? (
+                  <span style={{ fontSize: "1.5em", filter: "grayscale(0.3)" }}>🔒</span>
+                ) : (
+                  <>
                     <span style={{
                       fontFamily: FONTS.orbitron,
-                      fontSize: nodeSize * 0.32,
                       fontWeight: 700,
-                      color: isCompleted && s > 0 ? "rgba(0,0,0,0.6)" : "#fff",
+                      fontSize: "1.5em",
+                      color: isCompleted && s > 0 ? "rgba(0,0,0,0.75)" : "#fff",
+                      textShadow: isCompleted && s > 0 ? "none" : "0 1px 3px rgba(0,0,0,0.4)",
+                      lineHeight: 1,
                     }}>
                       {n}
                     </span>
-                  )}
-                </div>
-
-                {isCompleted && s > 0 && (
-                  <div className="flex gap-px mt-1" style={{ fontSize: UI.font.xs }}>
-                    {[1, 2, 3].map(i => (
-                      <span key={i} style={{
-                        color: i <= s ? UI.accent.gold : "rgba(255,255,255,0.15)",
-                        textShadow: i <= s ? "0 0 4px rgba(251,191,36,0.4)" : "none",
-                      }}>★</span>
-                    ))}
-                  </div>
-                )}
-
-                {isCurrent && (
-                  <div style={{
-                    fontSize: UI.font.xs,
-                    fontFamily: FONTS.default,
-                    fontWeight: 700,
-                    color: UI.text.secondary,
-                    marginTop: 2,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                  }}>
-                    Current
-                  </div>
+                    {s > 0 && (
+                      <div style={{ display: "flex", gap: 1 }}>
+                        {[1, 2, 3].map(i => (
+                          <span key={i} style={{
+                            fontSize: "1.5em",
+                            color: i <= s ? "#fef08a" : "rgba(0,0,0,0.25)",
+                            textShadow: i <= s ? "0 0 4px rgba(253,224,71,0.6)" : "none",
+                          }}>★</span>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </button>
             );

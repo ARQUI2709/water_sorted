@@ -65,10 +65,11 @@ export default function App() {
   // the `difficulty` preference until the next level starts).
   const [levelTier, setLevelTier] = React.useState(difficulty);
 
-  // --- Hints & undo limits ---
+  // --- Hints, undo & add-bottle limits ---
   const [hint, setHint] = React.useState(null);
   const [hintsLeft, setHintsLeft] = React.useState(DIFFICULTY_LIMITS.normal.hints);
   const [undosLeft, setUndosLeft] = React.useState(DIFFICULTY_LIMITS.normal.undos);
+  const [addBottlesLeft, setAddBottlesLeft] = React.useState(DIFFICULTY_LIMITS.normal.addBottles);
 
   // --- Solver & stars ---
   const [deadlock, setDeadlock] = React.useState(false);
@@ -198,6 +199,7 @@ export default function App() {
     const limits = DIFFICULTY_LIMITS[tier] || DIFFICULTY_LIMITS.normal;
     setHintsLeft(limits.hints);
     setUndosLeft(limits.undos);
+    setAddBottlesLeft(limits.addBottles ?? 0);
     setDeadlock(false);
     setMopt(-1);
     setMoptLB(Math.max(1, movesLowerBound(g.bottles)));
@@ -353,6 +355,16 @@ export default function App() {
     });
   }, [bottles, play, hintsLeft, requestSolve]);
 
+  const addBottle = React.useCallback(() => {
+    if (addBottlesLeft <= 0 || showWin) return;
+    haptic();
+    play(soundTap);
+    setHistory(h => [...h, { bottles: bottles.map(b => [...b]), revealed: revealed.map(r => [...r]), moves }]);
+    setBottles(b => [...b, []]);
+    setRevealed(r => [...r, []]);
+    setAddBottlesLeft(n => n - 1);
+  }, [addBottlesLeft, bottles, revealed, moves, play, showWin]);
+
   const handleBgTap = React.useCallback((e) => {
     if (e.target === e.currentTarget && selected !== null) { setSelected(null); haptic(); }
   }, [selected]);
@@ -381,11 +393,60 @@ export default function App() {
   }, [maxLevel, bestStars]);
 
   // Gameplay actions only — sound and colorblind toggles live in Settings.
+  const UndoIcon = () => (
+    // Two arcs with exact 180° rotational symmetry around (10,10).
+    // Each covers 120° of the circle (r=7 outer / r=5.5 inner) plus a
+    // triangular arrowhead. Rotating any coordinate by 180° maps it to
+    // its counterpart in the other arrow.
+    <svg width="40" height="40" viewBox="0 0 20 20" fill="currentColor">
+      {/* Top arc body: 210°→330° clockwise (through 270° = top) */}
+      <path d="M 3.9 6.5 A 7 7 0 0 1 16.1 6.5 L 14.8 7.3 A 5.5 5.5 0 0 0 5.2 7.3 Z" />
+      {/* Top arrowhead — tangent at 330° points (0.5, 0.866) */}
+      <path d="M 14.8 7.3 L 17.4 5.8 L 17.1 8.2 Z" />
+      {/* Bottom arc body: 30°→150° clockwise (through 90° = bottom) — 180° mirror */}
+      <path d="M 16.1 13.5 A 7 7 0 0 1 3.9 13.5 L 5.2 12.7 A 5.5 5.5 0 0 0 14.8 12.7 Z" />
+      {/* Bottom arrowhead — tangent at 150° points (-0.5, -0.866) */}
+      <path d="M 5.2 12.7 L 2.6 14.2 L 2.9 11.8 Z" />
+    </svg>
+  );
+  const HintIcon = () => (
+    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 2a5 5 0 013.5 8.5c-.5.5-.5 1-.5 1.5H7c0-.5 0-1-.5-1.5A5 5 0 0110 2z" />
+      <path d="M8 16h4M9 18h2" />
+    </svg>
+  );
+  const HintPendingIcon = () => (
+    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="6" cy="10" r="1.2" fill="currentColor" />
+      <circle cx="10" cy="10" r="1.2" fill="currentColor" />
+      <circle cx="14" cy="10" r="1.2" fill="currentColor" />
+    </svg>
+  );
+  const RetryIcon = () => (
+    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M15 10a5 5 0 11-1.5-3.5" />
+      <polyline points="13,3 15.5,6.5 12,6.5" />
+    </svg>
+  );
+  const SkipIcon = () => (
+    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="5,4 10,10 5,16" />
+      <polyline points="10,4 15,10 10,16" />
+    </svg>
+  );
+  const AddBottleIcon = () => (
+    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7.5 2.5h5" />
+      <path d="M7.5 2.5v2.5L5 7.5v8.5a1 1 0 001 1h8a1 1 0 001-1V7.5L12.5 5V2.5" />
+      <path d="M10 10v4M8 12h4" />
+    </svg>
+  );
   const controls = [
-    { fn: undo, dis: !history.length || undosLeft <= 0, label: "UNDO", icon: "↶", count: undosLeft },
-    { fn: doHint, dis: deadlock || hintsLeft <= 0 || hintPending, label: "HINT", icon: hintPending ? "…" : "?", count: hintsLeft, pending: hintPending },
-    { fn: restart, label: "RETRY", icon: "⟳" },
-    { fn: () => { setLevel(l => l + 1); haptic(); }, label: "SKIP", icon: "»" },
+    { fn: undo, dis: !history.length || undosLeft <= 0, label: "UNDO", icon: <UndoIcon />, count: undosLeft },
+    { fn: doHint, dis: deadlock || hintsLeft <= 0 || hintPending, label: "HINT", icon: hintPending ? <HintPendingIcon /> : <HintIcon />, count: hintsLeft, pending: hintPending },
+    { fn: restart, label: "RETRY", icon: <RetryIcon /> },
+    { fn: () => { setLevel(l => l + 1); haptic(); }, label: "SKIP", icon: <SkipIcon /> },
+    { fn: addBottle, dis: addBottlesLeft <= 0 || showWin, label: "ADD", icon: <AddBottleIcon />, count: addBottlesLeft },
   ];
 
   // --- Render ---

@@ -23,10 +23,10 @@ export function Header({
 
   return (
     <div className="w-full px-3 pt-2 pb-1 shrink-0" style={{ position: "relative", zIndex: UI.z.chrome }}>
-      <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto" style={{ height: 44 }}>
+      <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto" style={{ height: 66 }}>
 
         {/* Left: level pill + combined status */}
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-4 min-w-0">
           <button
             onClick={onOpenMap}
             aria-label={`Level ${level} — open level map`}
@@ -111,7 +111,7 @@ export function Header({
           </span>
 
           <div className="relative" style={{ width: 32, height: 32 }}>
-            <svg width="32" height="32" viewBox="0 0 32 32">
+            <svg width="" height="32" viewBox="0 0 32 32">
               <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="2.5" />
               <circle
                 cx="16" cy="16" r="13" fill="none" stroke={UI.accent.primary} strokeWidth="2.5"

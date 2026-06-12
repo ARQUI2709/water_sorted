@@ -125,7 +125,7 @@ export function FullScreenPanel({ show, onClose, title, titleGradient = UI.title
     >
       <div
         className="shrink-0 flex items-center justify-between px-4 pt-3 pb-2"
-        style={{ paddingTop: "max(12px, env(safe-area-inset-top, 12px))" }}
+        style={{ paddingTop: "max(12p, env(safe-area-inset-top, 12px))" }}
       >
         <h2 className="font-bold" style={{
           fontFamily: FONTS.orbitron, fontSize: UI.font.lg,
