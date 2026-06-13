@@ -3,26 +3,36 @@
 // ============================================
 
 import React from 'react';
-import { FONTS, UI, MAIN_COLORS } from '../constants.js';
+import { FONTS, UI, MAIN_COLORS, candy3d } from '../constants.js';
 import { ModalCard } from '../components/chrome.jsx';
 
-// Tiny decorative bottle used in the step illustrations
+// Tiny decorative bottle used in step illustrations
 function MiniBottle({ slices, highlight }) {
   return (
     <div style={{
-      width: 28,
-      height: 76,
-      border: "2px solid rgba(255,255,255,0.35)",
+      width: 30,
+      height: 80,
+      border: "2.5px solid rgba(255,255,255,0.55)",
       borderTop: "none",
-      borderRadius: "0 0 10px 10px",
+      borderRadius: "0 0 12px 12px",
       display: "flex",
       flexDirection: "column-reverse",
       overflow: "hidden",
-      boxShadow: highlight ? "0 0 10px rgba(255,255,255,0.4)" : "none",
+      boxShadow: highlight ? "0 0 12px rgba(255,255,255,0.45)" : "none",
+      position: "relative",
     }}>
       {slices.map((color, i) => (
-        <div key={i} style={{ height: 17, backgroundColor: color || "transparent" }} />
+        <div key={i} style={{ height: 18, backgroundColor: color || "transparent" }} />
       ))}
+      {/* Gloss stripe */}
+      <div style={{
+        position: "absolute",
+        top: 4, left: 4,
+        width: 4, height: "60%",
+        background: "rgba(255,255,255,0.30)",
+        borderRadius: 2,
+        pointerEvents: "none",
+      }} />
     </div>
   );
 }
@@ -48,7 +58,7 @@ const STEPS = [
     art: (
       <div className="flex items-end justify-center gap-4">
         <MiniBottle slices={[RED, RED, RED, RED]} highlight />
-        <span style={{ color: "#4ade80", fontSize: "1.3rem" }}>✓</span>
+        <span style={{ color: "#3fd68f", fontSize: "1.5rem" }}>✓</span>
         <MiniBottle slices={[BLUE, BLUE, BLUE, BLUE]} highlight />
       </div>
     ),
@@ -88,7 +98,7 @@ export function Tutorial({ show, onClose }) {
           fontFamily: FONTS.orbitron,
           fontSize: UI.font.md,
           color: UI.accent.gold,
-          letterSpacing: "0.08em",
+          textShadow: "0 2px 0 rgba(140,80,0,0.4)",
         }}>
           {s.title}
         </div>
@@ -108,7 +118,10 @@ export function Tutorial({ show, onClose }) {
           {STEPS.map((_, i) => (
             <span key={i} className="rounded-full" style={{
               width: 8, height: 8,
-              background: i === step ? UI.accent.primary : "rgba(255,255,255,0.15)",
+              background: i === step
+                ? "linear-gradient(135deg,#34d2f7,#9b5cf6)"
+                : "rgba(255,255,255,0.15)",
+              boxShadow: i === step ? "0 0 6px rgba(100,180,255,0.6)" : "none",
               transition: "background 0.2s",
             }} />
           ))}
@@ -116,15 +129,17 @@ export function Tutorial({ show, onClose }) {
 
         <button
           onClick={() => last ? onClose() : setStep(n => n + 1)}
-          className="w-full py-3 font-bold text-white active:scale-95"
+          className="candy-btn w-full py-3 font-bold text-white active:scale-95"
           style={{
             fontFamily: FONTS.orbitron,
             fontSize: UI.font.md,
             background: UI.accent.primaryGrad,
-            boxShadow: "0 4px 16px rgba(139,92,246,0.35)",
+            boxShadow: candy3d("#3346c4", 4),
             letterSpacing: "0.1em",
             minHeight: 48,
-            borderRadius: UI.radius.md,
+            borderRadius: UI.radius.pill,
+            border: "2px solid rgba(255,255,255,0.60)",
+            cursor: "pointer",
           }}
         >
           {last ? "GOT IT!" : "NEXT →"}
@@ -140,6 +155,7 @@ export function Tutorial({ show, onClose }) {
               color: UI.text.muted,
               background: "none",
               fontWeight: 600,
+              cursor: "pointer",
             }}
           >
             Skip

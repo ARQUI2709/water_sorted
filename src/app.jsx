@@ -398,7 +398,7 @@ export default function App() {
     // Each covers 120° of the circle (r=7 outer / r=5.5 inner) plus a
     // triangular arrowhead. Rotating any coordinate by 180° maps it to
     // its counterpart in the other arrow.
-    <svg width="40" height="40" viewBox="0 0 20 20" fill="currentColor">
+    <svg width="28" height="28" viewBox="0 0 20 20" fill="currentColor">
       {/* Top arc body: 210°→330° clockwise (through 270° = top) */}
       <path d="M 3.9 6.5 A 7 7 0 0 1 16.1 6.5 L 14.8 7.3 A 5.5 5.5 0 0 0 5.2 7.3 Z" />
       {/* Top arrowhead — tangent at 330° points (0.5, 0.866) */}
@@ -410,32 +410,32 @@ export default function App() {
     </svg>
   );
   const HintIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M10 2a5 5 0 013.5 8.5c-.5.5-.5 1-.5 1.5H7c0-.5 0-1-.5-1.5A5 5 0 0110 2z" />
       <path d="M8 16h4M9 18h2" />
     </svg>
   );
   const HintPendingIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <circle cx="6" cy="10" r="1.2" fill="currentColor" />
       <circle cx="10" cy="10" r="1.2" fill="currentColor" />
       <circle cx="14" cy="10" r="1.2" fill="currentColor" />
     </svg>
   );
   const RetryIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M15 10a5 5 0 11-1.5-3.5" />
       <polyline points="13,3 15.5,6.5 12,6.5" />
     </svg>
   );
   const SkipIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="5,4 10,10 5,16" />
       <polyline points="10,4 15,10 10,16" />
     </svg>
   );
   const AddBottleIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="28" height="28" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M7.5 2.5h5" />
       <path d="M7.5 2.5v2.5L5 7.5v8.5a1 1 0 001 1h8a1 1 0 001-1V7.5L12.5 5V2.5" />
       <path d="M10 10v4M8 12h4" />
@@ -457,6 +457,7 @@ export default function App() {
         background: (() => {
           const bg = BACKGROUNDS.find(b => b.id === backgroundId) || BACKGROUNDS[0];
           if (bg.url) return `url(${bg.url}) center/cover no-repeat`;
+          if (bg.id === 'default') return `radial-gradient(120% 80% at 50% 0%, #131a55 0%, transparent 55%), linear-gradient(180deg, ${bg.colors[0]}, ${bg.colors[1]} 55%, ${bg.colors[2]})`;
           return `linear-gradient(160deg, ${bg.colors[0]}, ${bg.colors[1]} 50%, ${bg.colors[2]})`;
         })(),
         touchAction: "manipulation",
@@ -466,7 +467,7 @@ export default function App() {
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
-      <Stars />
+      <Stars decor={!(BACKGROUNDS.find(b => b.id === backgroundId)?.url)} />
 
       <HomeScreen
         show={showHome}
@@ -589,20 +590,6 @@ export default function App() {
       />
 
       <Toast message={toast} />
-
-      {/* Decorative blurs */}
-      <div className="fixed pointer-events-none" style={{
-        width: 140, height: 140, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(139,92,246,0.08), transparent 70%)",
-        top: "6%", right: "-4%", filter: "blur(35px)",
-        animation: "float 6s ease-in-out infinite", zIndex: UI.z.bg,
-      }} />
-      <div className="fixed pointer-events-none" style={{
-        width: 100, height: 100, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(99,102,241,0.06), transparent 70%)",
-        bottom: "10%", left: "-3%", filter: "blur(25px)",
-        animation: "float 8s ease-in-out 2s infinite", zIndex: UI.z.bg,
-      }} />
     </div>
   );
 }

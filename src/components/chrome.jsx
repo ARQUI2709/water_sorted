@@ -3,7 +3,7 @@
 // ============================================
 
 import React from 'react';
-import { FONTS, UI } from '../constants.js';
+import { FONTS, UI, candy3d } from '../constants.js';
 import { useFocusTrap } from '../hooks.js';
 
 // --------------------------------------------
@@ -36,7 +36,6 @@ export function IconButton({ icon, label, onClick, size = 44, ariaLabel, style }
           fontFamily: FONTS.default,
           fontWeight: 700,
           marginTop: 2,
-          letterSpacing: "0.03em",
         }}>
           {label}
         </span>
@@ -69,8 +68,9 @@ export function ModalCard({
         className="p-5 w-full max-w-xs"
         style={{
           background: UI.panel,
-          border: UI.border.subtle,
+          border: "1.5px solid rgba(255,255,255,0.18)",
           borderRadius: UI.radius.lg,
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12), 0 20px 56px rgba(0,0,0,0.55)",
           animation: "bounceIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards",
         }}
         onClick={e => e.stopPropagation()}
@@ -90,13 +90,18 @@ export function ModalCard({
         {showClose && onClose && (
           <button
             onClick={onClose}
-            className="w-full py-2.5 font-semibold active:scale-95"
+            className="candy-btn w-full py-2.5 font-bold active:scale-95"
             style={{
-              background: UI.surface.raised,
-              color: UI.text.secondary,
+              background: UI.candy.button.green.grad,
+              color: "#fff",
               fontSize: UI.font.md,
               fontFamily: FONTS.default,
-              borderRadius: UI.radius.md,
+              fontWeight: 700,
+              borderRadius: UI.radius.pill,
+              border: "2px solid rgba(255,255,255,0.5)",
+              boxShadow: candy3d(UI.candy.button.green.edge, 3),
+              cursor: "pointer",
+              letterSpacing: "0.05em",
             }}
           >
             Close
@@ -125,12 +130,13 @@ export function FullScreenPanel({ show, onClose, title, titleGradient = UI.title
     >
       <div
         className="shrink-0 flex items-center justify-between px-4 pt-3 pb-2"
-        style={{ paddingTop: "max(12p, env(safe-area-inset-top, 12px))" }}
+        style={{ paddingTop: "max(12px, env(safe-area-inset-top, 12px))" }}
       >
         <h2 className="font-bold" style={{
-          fontFamily: FONTS.orbitron, fontSize: UI.font.lg,
-          background: titleGradient,
-          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          fontFamily: FONTS.orbitron,
+          fontSize: "1.3rem",
+          color: "#fff",
+          textShadow: "0 3px 0 rgba(0,0,0,0.35), 0 6px 14px rgba(0,0,0,0.3)",
         }}>
           {title}
         </h2>
@@ -155,10 +161,11 @@ export function Toast({ message }) {
         zIndex: UI.z.toast,
         bottom: "calc(84px + env(safe-area-inset-bottom, 0px))",
         transform: "translateX(-50%)",
-        background: "rgba(20,15,45,0.95)",
-        border: UI.border.subtle,
+        background: "rgba(14,18,56,0.96)",
+        border: "1.5px solid rgba(255,255,255,0.20)",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.45)",
         borderRadius: UI.radius.pill,
-        padding: "8px 16px",
+        padding: "8px 18px",
         color: UI.text.secondary,
         fontFamily: FONTS.default,
         fontWeight: 600,
