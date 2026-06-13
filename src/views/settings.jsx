@@ -3,13 +3,13 @@
 // ============================================
 
 import React from 'react';
-import { FONTS, BACKGROUNDS, UI } from '../constants.js';
+import { FONTS, BACKGROUNDS, UI, candy3d } from '../constants.js';
 import { ModalCard } from '../components/chrome.jsx';
 
 function SectionLabel({ children }) {
   return (
     <div style={{
-      fontSize: UI.font.xs, fontFamily: FONTS.default, fontWeight: 600,
+      fontSize: UI.font.xs, fontFamily: FONTS.default, fontWeight: 700,
       color: UI.text.muted, marginBottom: 8, textTransform: "uppercase",
       letterSpacing: "0.08em",
     }}>
@@ -38,16 +38,27 @@ function ToggleRow({ icon, label, on, onToggle }) {
       }}>
         {icon} {label}
       </span>
-      <span style={{
-        fontFamily: FONTS.default, fontSize: UI.font.xs, fontWeight: 700,
-        padding: "2px 10px",
+      {/* Sliding switch */}
+      <div style={{
+        width: 40, height: 22,
         borderRadius: UI.radius.pill,
-        background: on ? "rgba(74,222,128,0.15)" : UI.surface.base,
-        border: on ? "1px solid rgba(74,222,128,0.4)" : UI.border.subtle,
-        color: on ? "#4ade80" : UI.text.muted,
+        background: on ? "linear-gradient(90deg,#3fd68f,#2fc764)" : "rgba(255,255,255,0.12)",
+        border: on ? "1.5px solid rgba(0,0,0,0.15)" : "1.5px solid rgba(255,255,255,0.18)",
+        position: "relative",
+        transition: "background 0.2s",
+        boxShadow: on ? "inset 0 1px 0 rgba(0,0,0,0.1)" : "none",
+        flexShrink: 0,
       }}>
-        {on ? "ON" : "OFF"}
-      </span>
+        <div style={{
+          position: "absolute",
+          top: 2, left: on ? 20 : 2,
+          width: 16, height: 16,
+          borderRadius: "50%",
+          background: "#fff",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+          transition: "left 0.2s ease",
+        }} />
+      </div>
     </button>
   );
 }
@@ -61,9 +72,9 @@ export function SettingsModal({
   onOpenAchievements, onOpenTutorial,
 }) {
   const tiers = [
-    { key: 'easy', label: 'EASY', color: '#4ade80', desc: 'More empty bottles' },
-    { key: 'normal', label: 'NORMAL', color: '#facc15', desc: 'Balanced' },
-    { key: 'hard', label: 'HARD', color: '#f87171', desc: 'Fewer empty bottles' },
+    { key: 'easy',   label: 'EASY',   grad: "linear-gradient(180deg,#a9f5cd,#3fd68f)", edge: "#0f8f60", active: "#3fd68f", desc: 'More empty bottles' },
+    { key: 'normal', label: 'NORMAL', grad: "linear-gradient(180deg,#ffe27a,#ffab2e)", edge: "#c47600", active: "#ffd96a", desc: 'Balanced' },
+    { key: 'hard',   label: 'HARD',   grad: "linear-gradient(180deg,#ffbada,#ff6fae)", edge: "#c23577", active: "#ff6fae", desc: 'Fewer empty bottles' },
   ];
 
   return (
@@ -78,30 +89,29 @@ export function SettingsModal({
               key={t.key}
               onClick={() => onChangeDifficulty(t.key)}
               aria-pressed={active}
-              className="flex-1 flex flex-col items-center py-2.5 active:scale-95"
+              className="candy-btn flex-1 flex flex-col items-center py-2 active:scale-95"
               style={{
-                background: active
-                  ? `linear-gradient(135deg, ${t.color}22, ${t.color}11)`
-                  : UI.surface.base,
-                border: active
-                  ? `2px solid ${t.color}88`
-                  : UI.border.subtle,
+                background: active ? t.grad : UI.surface.base,
+                border: active ? "2px solid rgba(255,255,255,0.50)" : UI.border.subtle,
                 borderRadius: UI.radius.md,
                 transition: "all 0.15s ease",
+                boxShadow: active ? candy3d(t.edge, 3) : "none",
+                cursor: "pointer",
               }}
             >
               <span style={{
                 fontFamily: FONTS.orbitron,
                 fontSize: UI.font.xs,
                 fontWeight: 700,
-                color: active ? t.color : UI.text.muted,
+                color: active ? "#fff" : UI.text.muted,
+                textShadow: active ? "0 1px 0 rgba(0,0,0,0.25)" : "none",
               }}>
                 {t.label}
               </span>
               <span style={{
                 fontSize: UI.font.xs,
                 fontFamily: FONTS.default,
-                color: active ? `${t.color}aa` : UI.text.muted,
+                color: active ? "rgba(255,255,255,0.75)" : UI.text.muted,
                 marginTop: 2,
               }}>
                 {t.desc}
@@ -128,18 +138,21 @@ export function SettingsModal({
               key={bg.id}
               onClick={() => onChangeBackground(bg.id)}
               aria-pressed={active}
-              className="py-2.5 active:scale-95 text-center"
+              className="py-2 active:scale-95 text-center flex flex-col items-center gap-1"
               style={{
                 background: active ? UI.surface.active : UI.surface.base,
-                border: active ? UI.border.strong : UI.border.subtle,
+                border: active ? "2px solid rgba(100,200,255,0.55)" : UI.border.subtle,
                 borderRadius: UI.radius.md,
                 transition: "all 0.15s ease",
+                boxShadow: active ? "0 0 10px rgba(80,160,255,0.30)" : "none",
+                cursor: "pointer",
               }}
             >
+              <span style={{ fontSize: "1.2rem", lineHeight: 1 }}>{bg.icon}</span>
               <div style={{
                 fontFamily: FONTS.default,
                 fontSize: UI.font.xs,
-                fontWeight: 600,
+                fontWeight: 700,
                 color: active ? "#fff" : UI.text.muted,
               }}>
                 {bg.name}
@@ -159,14 +172,17 @@ export function SettingsModal({
       {onOpenAchievements && (
         <button
           onClick={onOpenAchievements}
-          className="w-full py-2.5 font-semibold active:scale-95 mb-2 flex items-center justify-center gap-2"
+          className="candy-btn w-full py-2.5 font-bold active:scale-95 mb-2 flex items-center justify-center gap-2"
           style={{
-            background: "rgba(251,191,36,0.08)",
-            border: "1px solid rgba(251,191,36,0.15)",
-            color: UI.accent.gold,
+            background: UI.candy.button.green.grad,
+            border: "2px solid rgba(255,255,255,0.45)",
+            color: "#fff",
             fontSize: UI.font.md,
             fontFamily: FONTS.orbitron,
-            borderRadius: UI.radius.md,
+            borderRadius: UI.radius.pill,
+            boxShadow: candy3d(UI.candy.button.green.edge, 3),
+            cursor: "pointer",
+            fontWeight: 700,
           }}
         >
           🏆 Achievements
@@ -176,14 +192,17 @@ export function SettingsModal({
       {onOpenTutorial && (
         <button
           onClick={onOpenTutorial}
-          className="w-full py-2.5 font-semibold active:scale-95 mb-2 flex items-center justify-center gap-2"
+          className="candy-btn w-full py-2.5 font-bold active:scale-95 mb-2 flex items-center justify-center gap-2"
           style={{
-            background: UI.surface.base,
-            border: UI.border.subtle,
-            color: UI.text.secondary,
+            background: UI.candy.button.blue.grad,
+            border: "2px solid rgba(255,255,255,0.45)",
+            color: "#fff",
             fontSize: UI.font.md,
             fontFamily: FONTS.orbitron,
-            borderRadius: UI.radius.md,
+            borderRadius: UI.radius.pill,
+            boxShadow: candy3d(UI.candy.button.blue.edge, 3),
+            cursor: "pointer",
+            fontWeight: 700,
           }}
         >
           ❓ How to play

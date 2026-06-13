@@ -12,10 +12,22 @@ export function Header({
   doneCount, numColors,
   onOpenMap, onOpenSettings,
 }) {
-  const diffColor = difficulty === 'easy' ? '#4ade80' : difficulty === 'hard' ? '#f87171' : '#facc15';
+  const diffColor = difficulty === 'easy' ? '#3fd68f' : difficulty === 'hard' ? '#ff6fae' : '#ffd96a';
   const hiddenLabel = hiddenCount === 0 ? null : hiddenCount >= 3 ? "TOP" : `H${hiddenCount}`;
 
-  // One combined status string instead of a wrapping row of pills.
+  const chipStyle = {
+    background: "rgba(8,12,44,0.75)",
+    border: "1.5px solid rgba(255,255,255,0.20)",
+    borderRadius: UI.radius.pill,
+    color: UI.text.secondary,
+    fontSize: UI.font.sm,
+    fontFamily: FONTS.default,
+    fontWeight: 600,
+    fontVariantNumeric: "tabular-nums",
+    whiteSpace: "nowrap",
+    padding: "3px 10px",
+  };
+
   const statusParts = [`${moves} mv`];
   if (bestStars > 0) statusParts.push("★".repeat(bestStars) + "☆".repeat(3 - bestStars));
   else if (best > 0) statusParts.push(`★${best}`);
@@ -23,48 +35,27 @@ export function Header({
 
   return (
     <div className="w-full px-3 pt-2 pb-1 shrink-0" style={{ position: "relative", zIndex: UI.z.chrome }}>
-      <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto" style={{ height: 66 }}>
+      <div className="flex items-center justify-between gap-2 max-w-3xl mx-auto" style={{ height: 62 }}>
 
-        {/* Left: level pill + combined status */}
-        <div className="flex items-center gap-4 min-w-0">
+        {/* Left: level chip + status chip */}
+        <div className="flex items-center gap-2 min-w-0">
           <button
             onClick={onOpenMap}
             aria-label={`Level ${level} — open level map`}
-            className="active:scale-95 shrink-0 px-2.5 py-1 flex items-center gap-1"
-            style={{
-              background: UI.surface.base,
-              border: UI.border.subtle,
-              borderRadius: UI.radius.pill,
-              cursor: "pointer",
-              transition: "transform 0.15s, background 0.15s",
-            }}
+            className="active:scale-95 shrink-0 flex items-center gap-1"
+            style={{ ...chipStyle, cursor: "pointer", transition: "transform 0.15s" }}
           >
+            <span style={{ fontSize: "0.9rem" }}>🪐</span>
             <span className="font-black" style={{
               fontFamily: FONTS.orbitron, fontSize: UI.font.lg,
-              background: UI.titleGrad,
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              color: "#fff",
             }}>
               LV{level}
             </span>
-            <span style={{ color: UI.text.muted, fontSize: UI.font.sm, lineHeight: 1 }}>▸</span>
+            <span style={{ color: UI.text.muted, fontSize: UI.font.xs, lineHeight: 1 }}>▸</span>
           </button>
 
-          <span
-            className="px-2.5 py-1 min-w-0"
-            style={{
-              background: UI.surface.base,
-              border: UI.border.subtle,
-              borderRadius: UI.radius.pill,
-              color: UI.text.secondary,
-              fontSize: UI.font.sm,
-              fontFamily: FONTS.default,
-              fontWeight: 600,
-              fontVariantNumeric: "tabular-nums",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
+          <span style={{ ...chipStyle, overflow: "hidden", textOverflow: "ellipsis" }}>
             {statusParts.join(" · ")}
           </span>
 
@@ -76,52 +67,51 @@ export function Header({
             style={{
               width: 10, height: 10,
               backgroundColor: diffColor,
-              boxShadow: `0 0 5px ${diffColor}66`,
+              boxShadow: `0 0 6px ${diffColor}88`,
               display: "inline-block",
             }}
           />
 
           {hiddenLabel && (
-            <span className="shrink-0 px-1.5 py-0.5" style={{
-              background: "rgba(255,0,110,0.15)", color: "#FF006E",
-              border: "1px solid rgba(255,0,110,0.2)", fontSize: UI.font.xs,
-              borderRadius: UI.radius.pill,
-              fontWeight: 700, fontFamily: FONTS.default, animation: "pulse 2s infinite",
-              whiteSpace: "nowrap",
+            <span className="shrink-0" style={{
+              ...chipStyle,
+              background: "rgba(255,0,110,0.18)", color: "#ff6b9d",
+              border: "1px solid rgba(255,0,110,0.28)",
+              animation: "pulse 2s infinite",
             }}>
               🔒{hiddenLabel}
             </span>
           )}
         </div>
 
-        {/* Right: settings gear + timer + progress ring */}
+        {/* Right: settings gear + timer chip + progress ring */}
         <div className="flex items-center gap-2 shrink-0">
-          <IconButton icon="⚙" ariaLabel="Settings" onClick={onOpenSettings} size={36} />
+          <IconButton icon="⚙" ariaLabel="Settings" onClick={onOpenSettings} size={34} />
 
-          {/* Fixed width + tabular digits: Orbitron digits vary in width, and
-              a ticking clock that resizes every second would reflow the
-              header (and the board below it). */}
+          {/* Timer chip — fixed width prevents reflow on digit change */}
           <span style={{
-            fontFamily: FONTS.orbitron, fontSize: UI.font.sm,
-            color: UI.text.secondary, letterSpacing: "0.05em",
-            fontVariantNumeric: "tabular-nums",
-            minWidth: "5ch", textAlign: "right", display: "inline-block",
+            ...chipStyle,
+            fontFamily: FONTS.orbitron,
+            fontSize: UI.font.sm,
+            minWidth: "5.5ch",
+            textAlign: "right",
+            display: "inline-block",
           }}>
-            {time}
+            ⏱ {time}
           </span>
 
           <div className="relative" style={{ width: 32, height: 32 }}>
-            <svg width="" height="32" viewBox="0 0 32 32">
-              <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="2.5" />
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="2.5" />
               <circle
-                cx="16" cy="16" r="13" fill="none" stroke={UI.accent.primary} strokeWidth="2.5"
+                cx="16" cy="16" r="13" fill="none" stroke={UI.accent.gold} strokeWidth="2.5"
                 strokeDasharray={`${(doneCount / Math.max(1, numColors)) * 81.7} 81.7`}
                 strokeLinecap="round" transform="rotate(-90 16 16)"
                 style={{ transition: "stroke-dasharray 0.4s ease" }}
               />
             </svg>
             <div className="absolute inset-0 flex items-center justify-center" style={{
-              fontSize: UI.font.xs, fontWeight: 700,
+              fontSize: "0.6rem", fontWeight: 700,
               color: UI.text.secondary, fontFamily: FONTS.default,
             }}>
               {doneCount}/{numColors}

@@ -3,15 +3,16 @@
 // ============================================
 
 import React from 'react';
-import { BOTTLE_CAPACITY, MAIN_COLORS, COLOR_NAMES, PATTERNS, FONTS, UI, getColor } from './constants.js';
+import { BOTTLE_CAPACITY, MAIN_COLORS, COLOR_NAMES, PATTERNS, FONTS, UI, getColor, candy3d } from './constants.js';
 
 // --------------------------------------------
-// Stars — animated background
+// Stars — animated night-sky background layer
+// decor=true adds bubbles + glow blobs (default background only)
 // --------------------------------------------
-export function Stars() {
-  const stars = React.useMemo(() =>
-    Array.from({ length: 50 }, (_, i) => ({
-      id: i,
+export function Stars({ decor = false }) {
+  const dots = React.useMemo(() =>
+    Array.from({ length: 28 }, (_, i) => ({
+      id: `d${i}`,
       left: Math.random() * 100,
       top: Math.random() * 100,
       size: Math.random() * 2 + 0.5,
@@ -20,22 +21,91 @@ export function Stars() {
     })),
     []);
 
+  const sparkles = React.useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => ({
+      id: `s${i}`,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      size: 6 + Math.random() * 10,
+      delay: Math.random() * 3,
+      duration: 2 + Math.random() * 2,
+    })),
+    []);
+
+  const bubbles = React.useMemo(() => decor
+    ? Array.from({ length: 6 }, (_, i) => ({
+        id: `b${i}`,
+        left: Math.random() * 85 + 5,
+        size: 12 + Math.random() * 28,
+        delay: Math.random() * 8,
+        duration: 14 + Math.random() * 12,
+        dx: (Math.random() - 0.5) * 60,
+      }))
+    : [],
+    [decor]);
+
   return (
     <div className="fixed inset-0 pointer-events-none" style={{ zIndex: UI.z.bg }}>
-      {stars.map(s => (
-        <div
-          key={s.id}
-          className="absolute rounded-full bg-white"
-          style={{
-            left: `${s.left}%`,
-            top: `${s.top}%`,
-            width: s.size,
-            height: s.size,
-            animation: `twinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
-            opacity: 0.3,
-          }}
-        />
+      {/* Dot stars */}
+      {dots.map(s => (
+        <div key={s.id} className="absolute rounded-full bg-white" style={{
+          left: `${s.left}%`, top: `${s.top}%`,
+          width: s.size, height: s.size,
+          animation: `twinkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
+          opacity: 0.3,
+        }} />
       ))}
+
+      {/* 4-point sparkles */}
+      {sparkles.map(s => (
+        <div key={s.id} className="absolute sparkle4" style={{
+          left: `${s.left}%`, top: `${s.top}%`,
+          width: s.size, height: s.size,
+          transform: 'translate(-50%,-50%)',
+          animation: `sparkle ${s.duration}s ease-in-out ${s.delay}s infinite`,
+        }} />
+      ))}
+
+      {/* Rising bubbles (default background only) */}
+      {bubbles.map(b => (
+        <div key={b.id} className="absolute bubble-deco" style={{
+          left: `${b.left}%`,
+          bottom: '-8%',
+          width: b.size,
+          height: b.size,
+          animation: `bubbleRise ${b.duration}s ease-in ${b.delay}s infinite`,
+          '--bx': `${b.dx}px`,
+        }} />
+      ))}
+
+      {/* Pastel glow blobs (default background only) */}
+      {decor && (
+        <>
+          <div className="absolute pointer-events-none" style={{
+            width: 220, height: 220, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,100,220,0.12), transparent 65%)',
+            top: '1%', left: '-8%', filter: 'blur(35px)',
+            animation: 'blobDrift 12s ease-in-out infinite',
+          }} />
+          <div className="absolute pointer-events-none" style={{
+            width: 200, height: 200, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(60,200,255,0.10), transparent 65%)',
+            top: '4%', right: '-10%', filter: 'blur(28px)',
+            animation: 'blobDrift 15s ease-in-out 3s infinite',
+          }} />
+          <div className="absolute pointer-events-none" style={{
+            width: 180, height: 180, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(120,70,255,0.09), transparent 65%)',
+            bottom: '4%', left: '3%', filter: 'blur(32px)',
+            animation: 'blobDrift 18s ease-in-out 6s infinite',
+          }} />
+          {/* Bottom bokeh glow */}
+          <div className="absolute pointer-events-none" style={{
+            width: '100%', height: '30vh', bottom: 0, left: 0,
+            background: 'radial-gradient(ellipse at 50% 115%, rgba(70,90,255,0.22), rgba(30,55,180,0.08) 45%, transparent 70%)',
+          }} />
+        </>
+      )}
     </div>
   );
 }
@@ -81,6 +151,59 @@ export function Confetti() {
 }
 
 // --------------------------------------------
+// BottleGlass — pure SVG glossy glass overlay
+// Render over the liquid container; z-index 2 so it overlays liquid.
+// --------------------------------------------
+export function BottleGlass({ w, h }) {
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox="0 0 100 280"
+      className="absolute inset-0 pointer-events-none"
+      style={{ zIndex: 2 }}
+      aria-hidden="true"
+    >
+      {/* Outer glass body — light fill + white stroke */}
+      <path
+        d="M 37,4 L 63,4 Q 67,4 67,9 L 67,18 Q 79,25 85,39 L 91,57 Q 94,64 94,72 L 94,237 Q 94,267 62,271 L 38,271 Q 6,267 6,237 L 6,72 Q 6,64 9,57 L 15,39 Q 21,25 33,18 L 33,9 Q 33,4 37,4 Z"
+        fill="rgba(255,255,255,0.07)"
+        stroke="rgba(255,255,255,0.68)"
+        strokeWidth="3.5"
+        strokeLinejoin="round"
+      />
+      {/* Inner depth line */}
+      <path
+        d="M 37,4 L 63,4 Q 67,4 67,9 L 67,18 Q 79,25 85,39 L 91,57 Q 94,64 94,72 L 94,237 Q 94,267 62,271 L 38,271 Q 6,267 6,237 L 6,72 Q 6,64 9,57 L 15,39 Q 21,25 33,18 L 33,9 Q 33,4 37,4 Z"
+        fill="none"
+        stroke="rgba(10,14,60,0.28)"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        transform="translate(1,1)"
+      />
+      {/* Cap / lip at top */}
+      <rect x="34" y="1" width="32" height="10" rx="5" ry="5"
+        fill="rgba(255,255,255,0.10)"
+        stroke="rgba(255,255,255,0.58)"
+        strokeWidth="2"
+      />
+      {/* Left gloss stripe */}
+      <rect x="10" y="72" width="9" height="158" rx="4" ry="4"
+        fill="rgba(255,255,255,0.28)"
+      />
+      {/* Neck gloss dot */}
+      <ellipse cx="15" cy="52" rx="6" ry="4"
+        fill="rgba(255,255,255,0.20)"
+      />
+      {/* Bottom inner shadow */}
+      <ellipse cx="50" cy="259" rx="31" ry="9"
+        fill="rgba(0,0,0,0.18)"
+      />
+    </svg>
+  );
+}
+
+// --------------------------------------------
 // Bottle — single bottle with liquid layers
 // --------------------------------------------
 export function Bottle({
@@ -90,7 +213,6 @@ export function Bottle({
   index, pourIn, pourOut,
 }) {
   const w = size;
-  const bR = Math.round(w * 0.25);
   const doneColor = completed ? getColor(segments[0]) : null;
 
   const imgW = w;
@@ -98,7 +220,8 @@ export function Bottle({
   const liquidTop = Math.round(imgH * 0.22);
   const liquidBot = Math.round(imgH * 0.05);
   const liquidH = imgH - liquidTop - liquidBot;
-  const liquidPadX = Math.round(w * 0.9);
+  const liqInset = Math.round(w * 0.07);
+  const liqW = w - liqInset * 2;
 
   return (
     <button
@@ -118,45 +241,34 @@ export function Bottle({
         transform: shaking ? "translateX(0)"
           : selected ? "translateY(-10px) scale(1.04)"
             : "scale(1)",
-        filter: selected ? "drop-shadow(0 0 10px rgba(255,255,255,0.5))"
-          : completed ? `drop-shadow(0 0 6px ${doneColor}55)`
-            : "none",
+        filter: selected ? "drop-shadow(0 0 12px rgba(255,255,255,0.65))"
+          : hinted ? "drop-shadow(0 0 9px rgba(160,100,255,0.75))"
+            : completed ? `drop-shadow(0 0 8px ${doneColor}88)`
+              : "none",
         animation: shaking ? "shake 0.3s ease-out"
           : pourOut ? `${pourOut.dir > 0 ? "pourTiltR" : "pourTiltL"} 0.4s ease-out`
             : hinted ? "hintPulse 0.8s ease-in-out 2"
               : "none",
       }}
     >
-      {/* Hint ring */}
-      {hinted && !selected && (
-        <div className="absolute pointer-events-none" style={{
-          top: -3, left: -3,
-          width: imgW + 6, height: imgH + 6,
-          border: "2px solid rgba(139,92,246,0.6)",
-          borderRadius: bR + 5,
-          animation: "hintPulse 0.8s ease-in-out 2",
-        }} />
-      )}
-
       {/* Liquid segments */}
       <div
         className="absolute overflow-hidden"
         style={{
-          width: liquidPadX,
-          left: liquidPadX,
-          transform: "translateX(-99%)",
+          width: liqW,
+          left: liqInset,
           top: liquidTop,
           height: liquidH,
-          borderRadius: `0 0 ${Math.round(w * 0.1)}px ${Math.round(w * 0.1)}px`,
+          borderRadius: `0 0 ${Math.round(w * 0.30)}px ${Math.round(w * 0.30)}px`,
+          zIndex: 1,
         }}
       >
         <div className="absolute bottom-0 left-0 right-0 flex flex-col-reverse">
           {segments.map((colorIndex, i) => {
             const visible = hiddenCount === 0 || (revealedArr && revealedArr[i]);
-            const bg = visible ? getColor(colorIndex) : "#1a1530";
+            const bg = visible ? getColor(colorIndex) : "#1a1e50";
             const isTop = i === segments.length - 1;
             const sliceH = Math.round(liquidH / BOTTLE_CAPACITY);
-            // Segments just received by a pour rise in with a slight stagger.
             const fillIdx = pourIn ? i - (segments.length - pourIn.count) : -1;
 
             return (
@@ -188,9 +300,9 @@ export function Bottle({
                 )}
                 {!visible && (
                   <div className="absolute inset-0 flex items-center justify-center" style={{
-                    color: "rgba(255,255,255,0.1)",
-                    fontSize: Math.max(10, sliceH * 0.35),
-                    fontWeight: 700,
+                    color: "rgba(255,255,255,0.40)",
+                    fontSize: Math.max(10, sliceH * 0.38),
+                    fontWeight: 900,
                     fontFamily: FONTS.orbitron,
                     userSelect: "none",
                   }}>
@@ -233,41 +345,25 @@ export function Bottle({
         </div>
       </div>
 
-      {/* Bottle PNG overlay */}
-      <img
-        src="assets/bottle.png"
-        alt=""
-        draggable={false}
-        className="absolute inset-0 pointer-events-none"
-        style={{ width: imgW, height: imgH, objectFit: "fill" }}
-      />
+      {/* SVG glass overlay */}
+      <BottleGlass w={imgW} h={imgH} />
 
-      {/* Selection ring */}
-      {selected && (
-        <div className="absolute pointer-events-none" style={{
-          top: -2, left: -2,
-          width: imgW + 4, height: imgH + 4,
-          border: "2px solid rgba(255,255,255,0.3)",
-          borderRadius: bR + 4,
-        }} />
-      )}
-
-      {/* Completion checkmark */}
+      {/* Completion checkmark — glossy green circle */}
       {completed && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 5 }}>
           <div style={{
-            width: imgW * 0.4,
-            height: imgW * 0.4,
+            width: imgW * 0.44,
+            height: imgW * 0.44,
             borderRadius: "50%",
-            background: `${doneColor}30`,
-            border: `2px solid ${doneColor}88`,
+            background: UI.candy.button.green.grad,
+            boxShadow: `0 3px 0 ${UI.candy.button.green.edge}, 0 5px 10px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.45)`,
+            border: "2px solid rgba(255,255,255,0.55)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: doneColor,
+            color: "#fff",
             fontSize: imgW * 0.22,
             fontWeight: 900,
-            backdropFilter: "blur(2px)",
           }}>
             ✓
           </div>
@@ -289,11 +385,11 @@ export function Legend({ numColors, open, toggle, patMode }) {
         onClick={toggle}
         className="flex items-center gap-1 mx-auto"
         style={{
-          color: "rgba(255,255,255,0.4)",
+          color: "rgba(255,255,255,0.45)",
           fontSize: "0.7rem",
           fontFamily: FONTS.default,
           padding: "3px 0",
-          fontWeight: 600,
+          fontWeight: 700,
         }}
       >
         {open ? "▾" : "▸"} {numColors} colors
@@ -303,16 +399,16 @@ export function Legend({ numColors, open, toggle, patMode }) {
         <div className="flex flex-wrap justify-center gap-1 pb-1">
           {Array.from({ length: numColors }, (_, i) => (
             <div key={i} className="flex items-center gap-1 px-1.5 py-0.5 rounded"
-              style={{ background: "rgba(255,255,255,0.05)" }}
+              style={{ background: UI.surface.raised, border: UI.border.subtle }}
             >
               <div className="rounded-full" style={{
                 width: 9,
                 height: 9,
                 backgroundColor: getColor(i),
-                boxShadow: `0 0 3px ${getColor(i)}44`,
+                boxShadow: `0 0 3px ${getColor(i)}66`,
               }} />
               <span style={{
-                color: "rgba(255,255,255,0.4)",
+                color: "rgba(255,255,255,0.5)",
                 fontSize: "0.65rem",
                 fontFamily: FONTS.default,
                 fontWeight: 600,

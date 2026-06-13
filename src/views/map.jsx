@@ -3,7 +3,7 @@
 // ============================================
 
 import React from 'react';
-import { FONTS, UI } from '../constants.js';
+import { FONTS, UI, candy3d } from '../constants.js';
 import { getBestStars } from '../storage.js';
 import { FullScreenPanel } from '../components/chrome.jsx';
 
@@ -47,26 +47,20 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-            gap: 12,
+            gap: 10,
           }}
         >
           {levels.map(({ n, stars: s, isCompleted, isLocked, isCurrent }) => {
             const canTap = !isLocked;
-            const bg = isLocked
-              ? "linear-gradient(180deg, #6b7a8d 0%, #4a5568 55%, #374151 100%)"
-              : isCompleted && s > 0
-                ? "linear-gradient(180deg, #fde68a 0%, #f59e0b 50%, #b45309 100%)"
-                : isCurrent
-                  ? "linear-gradient(180deg, #67e8f9 0%, #22d3ee 45%, #0891b2 100%)"
-                  : "linear-gradient(180deg, #93c5fd 0%, #3b82f6 50%, #1d4ed8 100%)";
 
-            const shadow = isLocked
-              ? "0 5px 0 #1f2937, inset 0 1px 0 rgba(255,255,255,0.18)"
-              : isCompleted && s > 0
-                ? "0 5px 0 #92400e, inset 0 1px 0 rgba(255,255,255,0.35)"
-                : isCurrent
-                  ? "0 5px 0 #0e7490, 0 0 18px rgba(34,211,238,0.45), inset 0 1px 0 rgba(255,255,255,0.45)"
-                  : "0 5px 0 #1e40af, inset 0 1px 0 rgba(255,255,255,0.3)";
+            const t = isLocked ? UI.candy.tile.locked
+                    : isCurrent ? UI.candy.tile.current
+                    : isCompleted && s > 0 ? UI.candy.tile.done
+                    : UI.candy.tile.locked;
+
+            const shadow = isCurrent
+              ? `${candy3d(t.edge, 5)}, ${t.glow}`
+              : candy3d(t.edge, 5);
 
             return (
               <button
@@ -82,45 +76,58 @@ export function LevelMap({ show, onClose, currentLevel, maxLevel, onSelectLevel 
                 className="active:scale-95"
                 style={{
                   aspectRatio: "1",
-                  borderRadius: 18,
+                  borderRadius: "24%",
                   border: isCurrent
-                    ? "2.5px solid rgba(255,255,255,0.75)"
+                    ? "2.5px solid rgba(255,255,255,0.80)"
                     : isLocked
-                      ? "2px solid rgba(255,255,255,0.08)"
-                      : "2px solid rgba(255,255,255,0.22)",
+                      ? "1.5px solid rgba(255,255,255,0.12)"
+                      : "2px solid rgba(255,255,255,0.30)",
                   padding: 0,
                   cursor: canTap ? "pointer" : "default",
-                  background: bg,
+                  background: t.grad,
                   boxShadow: shadow,
                   transition: "transform 0.1s",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: 3,
+                  gap: 2,
+                  filter: isLocked && !isCurrent ? "saturate(0.7) brightness(0.9)" : "none",
                 }}
               >
                 {isLocked ? (
-                  <span style={{ fontSize: "1.5em", filter: "grayscale(0.3)" }}>🔒</span>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <span style={{
+                      fontFamily: FONTS.orbitron,
+                      fontWeight: 700,
+                      fontSize: "1.3em",
+                      color: "rgba(255,255,255,0.85)",
+                      textShadow: "0 1px 3px rgba(0,0,0,0.4)",
+                      lineHeight: 1,
+                    }}>
+                      {n}
+                    </span>
+                    <span style={{ fontSize: "0.7em", opacity: 0.6 }}>🔒</span>
+                  </div>
                 ) : (
                   <>
                     <span style={{
                       fontFamily: FONTS.orbitron,
                       fontWeight: 700,
                       fontSize: "1.5em",
-                      color: isCompleted && s > 0 ? "rgba(0,0,0,0.75)" : "#fff",
-                      textShadow: isCompleted && s > 0 ? "none" : "0 1px 3px rgba(0,0,0,0.4)",
+                      color: "#fff",
+                      textShadow: "0 2px 0 rgba(0,0,0,0.25)",
                       lineHeight: 1,
                     }}>
                       {n}
                     </span>
                     {s > 0 && (
-                      <div style={{ display: "flex", gap: 1 }}>
+                      <div style={{ display: "flex", gap: 0 }}>
                         {[1, 2, 3].map(i => (
                           <span key={i} style={{
-                            fontSize: "1.5em",
-                            color: i <= s ? "#fef08a" : "rgba(0,0,0,0.25)",
-                            textShadow: i <= s ? "0 0 4px rgba(253,224,71,0.6)" : "none",
+                            fontSize: "0.9em",
+                            color: i <= s ? "#ffe27a" : "rgba(0,0,0,0.25)",
+                            textShadow: i <= s ? "0 1px 0 rgba(140,80,0,0.5)" : "none",
                           }}>★</span>
                         ))}
                       </div>

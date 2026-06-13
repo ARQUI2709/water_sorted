@@ -3,7 +3,7 @@
 // ============================================
 
 import React from 'react';
-import { FONTS, UI } from '../constants.js';
+import { FONTS, UI, candy3d } from '../constants.js';
 import { Confetti } from '../components.jsx';
 import { ModalCard } from '../components/chrome.jsx';
 
@@ -12,9 +12,9 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext, onRe
 
   const stats = [
     { value: moves, label: "moves", color: null },
-    mopt > 0 ? { value: mopt, label: "optimal", color: "#a78bfa" } : null,
+    mopt > 0 ? { value: mopt, label: "optimal", color: "#c4aaff" } : null,
     { value: time, label: "time", color: null },
-    streak > 1 ? { value: `🔥${streak}`, label: "streak", color: "#FF6B35" } : null,
+    streak > 1 ? { value: `🔥${streak}`, label: "streak", color: "#ff9040" } : null,
   ].filter(Boolean);
 
   return (
@@ -33,24 +33,21 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext, onRe
             🎉
           </div>
 
-          <h2 className="font-black tracking-wider mb-2" style={{
+          <h2 className="font-black tracking-wide mb-2" style={{
             fontFamily: FONTS.orbitron,
             fontSize: UI.font.xl,
-            background: "linear-gradient(135deg,#fbbf24,#f59e0b,#fbbf24)",
-            backgroundSize: "200% auto",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            animation: "shimmer 2s linear infinite",
+            color: "#ffc83d",
+            textShadow: "0 3px 0 #8a4d00, 0 6px 16px rgba(0,0,0,0.4)",
           }}>
             COMPLETE!
           </h2>
 
           {stars > 0 && (
-            <div className="flex justify-center gap-1 mb-3" style={{ fontSize: "1.6rem" }}>
+            <div className="flex justify-center gap-1 mb-3" style={{ fontSize: "2.2rem" }}>
               {[1, 2, 3].map(i => (
                 <span key={i} style={{
-                  color: i <= stars ? UI.accent.gold : "rgba(255,255,255,0.15)",
-                  textShadow: i <= stars ? "0 0 8px rgba(251,191,36,0.5)" : "none",
+                  color: i <= stars ? "#ffd84d" : "rgba(255,255,255,0.15)",
+                  textShadow: i <= stars ? "0 2px 0 #b06000, 0 0 14px rgba(255,200,60,0.7)" : "none",
                   animation: i <= stars ? `starPop 0.4s ease-out ${0.2 + i * 0.15}s both` : "none",
                   display: "inline-block",
                 }}>
@@ -64,16 +61,17 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext, onRe
           <div className="flex justify-center gap-2 mb-4" style={{ fontFamily: FONTS.default }}>
             {stats.map((stat, i) => (
               <div key={i} className="text-center px-3 py-2 flex-1" style={{
-                background: UI.surface.base,
+                background: UI.surface.raised,
                 border: UI.border.subtle,
-                borderRadius: UI.radius.sm,
+                borderRadius: UI.radius.md,
                 minWidth: 0,
               }}>
                 <div className="font-bold" style={{
-                  fontSize: "1.15rem",
-                  color: stat.color || "#ddd6fe",
+                  fontSize: "1.1rem",
+                  color: stat.color || "#fff",
                   fontVariantNumeric: "tabular-nums",
                   whiteSpace: "nowrap",
+                  fontFamily: FONTS.orbitron,
                 }}>
                   {stat.value}
                 </div>
@@ -86,15 +84,17 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext, onRe
 
           <button
             onClick={onNext}
-            className="w-full py-3 font-bold text-white active:scale-95"
+            className="candy-btn w-full py-3 font-bold text-white active:scale-95"
             style={{
               fontFamily: FONTS.orbitron,
               fontSize: UI.font.md,
               background: UI.accent.primaryGrad,
-              boxShadow: "0 4px 16px rgba(139,92,246,0.35)",
+              boxShadow: `${candy3d("#3346c4", 4)}, 0 0 16px rgba(90,123,255,0.4)`,
               letterSpacing: "0.1em",
               minHeight: 48,
-              borderRadius: UI.radius.md,
+              borderRadius: UI.radius.pill,
+              border: "2px solid rgba(255,255,255,0.65)",
+              cursor: "pointer",
             }}
           >
             NEXT LEVEL →
@@ -112,7 +112,8 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext, onRe
                   color: UI.text.secondary,
                   background: UI.surface.base,
                   border: UI.border.subtle,
-                  borderRadius: UI.radius.md,
+                  borderRadius: UI.radius.pill,
+                  cursor: "pointer",
                 }}
               >
                 ↻ Replay
@@ -128,7 +129,8 @@ export function WinScreen({ show, stars, moves, mopt, time, streak, onNext, onRe
                   color: UI.text.secondary,
                   background: UI.surface.base,
                   border: UI.border.subtle,
-                  borderRadius: UI.radius.md,
+                  borderRadius: UI.radius.pill,
+                  cursor: "pointer",
                 }}
               >
                 🗺 Map
