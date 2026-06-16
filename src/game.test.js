@@ -92,6 +92,18 @@ describe('pouring rules', () => {
     expect(canPour(bottles, 0, 1)).toBe(false);
   });
 
+  it('allows pouring a full single-color bottle with hidden bottom into empty', () => {
+    const bottles = B([0, 0, 0, 0], []);
+    const revealed = [[false, true, true, true], []];
+    expect(canPour(bottles, 0, 1, revealed)).toBe(true);
+  });
+
+  it('still blocks pouring a fully-revealed single-color bottle into empty', () => {
+    const bottles = B([0, 0, 0, 0], []);
+    const revealed = [[true, true, true, true], []];
+    expect(canPour(bottles, 0, 1, revealed)).toBe(false);
+  });
+
   it('pours the full top run up to available space', () => {
     const bottles = B([1, 0, 0, 0], [0]);
     expect(pourCount(bottles, 0, 1)).toBe(3);
@@ -120,6 +132,12 @@ describe('win and deadlock detection', () => {
   it('detects deadlocks', () => {
     expect(isDeadlocked([[0, 1, 0, 1], [1, 0, 1, 0]])).toBe(true);
     expect(isDeadlocked([[0, 1, 0, 1], [1, 0, 1, 0], []])).toBe(false);
+  });
+
+  it('does not report deadlock when a hidden-bottom bottle can pour into empty', () => {
+    const bottles = [[0, 0, 0, 0], []];
+    const revealed = [[false, true, true, true], []];
+    expect(isDeadlocked(bottles, revealed)).toBe(false);
   });
 });
 

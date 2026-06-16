@@ -157,25 +157,24 @@ export function generateLevel(level, tier) {
 
 // --- Move validation ---
 
-export function canPour(bottles, from, to) {
+export function canPour(bottles, from, to, revealed) {
   if (from === to) return false;
   const src = bottles[from];
   const dst = bottles[to];
   if (!src.length || dst.length >= BOTTLE_CAPACITY) return false;
-  // Don't move a completed bottle to an empty slot
-  if (!dst.length && src.length === BOTTLE_CAPACITY && isSingleColor(src)) return false;
+  if (!dst.length && isDoneBottle(src, revealed && revealed[from])) return false;
   return !dst.length || topColor(src) === topColor(dst);
 }
 
-export function pourCount(bottles, from, to) {
-  if (!canPour(bottles, from, to)) return 0;
+export function pourCount(bottles, from, to, revealed) {
+  if (!canPour(bottles, from, to, revealed)) return 0;
   return Math.min(topColorCount(bottles[from]), BOTTLE_CAPACITY - bottles[to].length);
 }
 
 // --- Move execution ---
 
 export function pour(bottles, revealed, from, to) {
-  if (!canPour(bottles, from, to)) return null;
+  if (!canPour(bottles, from, to, revealed)) return null;
 
   const newBottles = bottles.map(b => [...b]);
   const newRevealed = revealed.map(r => [...r]);
@@ -208,11 +207,11 @@ export const isWinCondition = (bottles, revealed) =>
       revealed[i].every(Boolean))
   );
 
-export function isDeadlocked(bottles) {
+export function isDeadlocked(bottles, revealed) {
   for (let from = 0; from < bottles.length; from++) {
     if (!bottles[from].length) continue;
     for (let to = 0; to < bottles.length; to++) {
-      if (canPour(bottles, from, to)) return false;
+      if (canPour(bottles, from, to, revealed)) return false;
     }
   }
   return true;
@@ -221,20 +220,20 @@ export function isDeadlocked(bottles) {
 // Heuristic hint, used when the solver can't produce an optimal first move
 // within budget: scores every legal pour and returns the most useful one
 // instead of the first one found.
-export function findHint(bottles) {
+export function findHint(bottles, revealed) {
   let best = null;
   let bestScore = -Infinity;
 
   for (let from = 0; from < bottles.length; from++) {
     const src = bottles[from];
-    if (!src.length || isDoneBottle(src, null)) continue;
+    if (!src.length || isDoneBottle(src, revealed && revealed[from])) continue;
 
     for (let to = 0; to < bottles.length; to++) {
-      if (!canPour(bottles, from, to)) continue;
+      if (!canPour(bottles, from, to, revealed)) continue;
 
       const dst = bottles[to];
       const run = topColorCount(src);
-      const count = pourCount(bottles, from, to);
+      const count = pourCount(bottles, from, to, revealed);
 
       let score = 0;
       // Completes a bottle
@@ -250,7 +249,7 @@ export function findHint(bottles) {
       // Pouring into an empty bottle is a last resort…
       if (dst.length === 0) score -= 5;
       // …and relocating a single-color bottle into an empty one is a null move
-      if (dst.length === 0 && isSingleColor(src)) score -= 100;
+      if (dst.length === 0 && isDoneBottle(src, revealed && revealed[from])) score -= 100;
 
       if (score > bestScore) {
         bestScore = score;
