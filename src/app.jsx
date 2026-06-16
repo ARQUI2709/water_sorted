@@ -225,7 +225,7 @@ export default function App() {
   React.useEffect(() => {
     if (!bottles.length || !revealed.length || showWin) { setDeadlock(false); return; }
     if (isWinCondition(bottles, revealed)) { setDeadlock(false); return; }
-    setDeadlock(isDeadlocked(bottles));
+    setDeadlock(isDeadlocked(bottles, revealed));
   }, [bottles, revealed, showWin]);
 
   // Latest board, used to discard async hint results after the board moved
@@ -253,7 +253,7 @@ export default function App() {
 
     if (selected === idx) { setSelected(null); return; }
 
-    if (canPour(bottles, selected, idx)) {
+    if (canPour(bottles, selected, idx, revealed)) {
       setHistory(h => [...h, {
         bottles: bottles.map(b => [...b]),
         revealed: revealed.map(r => [...r]),
@@ -266,7 +266,7 @@ export default function App() {
       setLastPour({
         from: selected,
         to: idx,
-        count: pourCount(bottles, selected, idx),
+        count: pourCount(bottles, selected, idx, revealed),
         color: topColor(bottles[selected]),
         dir: idx > selected ? 1 : -1,
         key: Date.now(),
@@ -341,11 +341,12 @@ export default function App() {
     hintPendingRef.current = true;
     setHintPending(true);
     const snapshot = bottles;
+    const revealedSnapshot = revealed;
     requestSolve(snapshot.map(b => [...b]), { maxNodes: 150000, timeLimitMs: 2000 }).then(res => {
       hintPendingRef.current = false;
       setHintPending(false);
       if (bottlesRef.current !== snapshot) return; // board changed meanwhile
-      const h = (res.status === 'solved' && res.firstMove) ? res.firstMove : findHint(snapshot);
+      const h = (res.status === 'solved' && res.firstMove) ? res.firstMove : findHint(snapshot, revealedSnapshot);
       if (h) {
         setHint(h);
         setHintsLeft(n => n - 1);
@@ -370,11 +371,11 @@ export default function App() {
   }, [selected]);
 
   const getGhost = React.useCallback((idx) => {
-    if (selected === null || selected === idx || !canPour(bottles, selected, idx)) {
+    if (selected === null || selected === idx || !canPour(bottles, selected, idx, revealed)) {
       return { count: 0, color: null };
     }
-    return { count: pourCount(bottles, selected, idx), color: topColor(bottles[selected]) };
-  }, [bottles, selected]);
+    return { count: pourCount(bottles, selected, idx, revealed), color: topColor(bottles[selected]) };
+  }, [bottles, revealed, selected]);
 
   const nextLevel = React.useCallback(() => {
     setLevel(l => l + 1);
