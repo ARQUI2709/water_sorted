@@ -65,7 +65,7 @@ export function ModalCard({
         role="dialog"
         aria-modal="true"
         aria-label={ariaLabel || title}
-        className="p-5 w-full max-w-xs"
+        className="p-6 w-full max-w-sm"
         style={{
           background: UI.panel,
           border: "1.5px solid rgba(255,255,255,0.18)",

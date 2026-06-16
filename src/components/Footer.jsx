@@ -1,7 +1,7 @@
 export default function Footer({ styleContent }) {
   return (
     <div style={{ ...styles.footer, ...styleContent }}>
-      <span style={styles.text}>by Os2group - 2026 | ver1.2.0</span>
+      <span style={styles.text}>by Os2group - 2026 | ver1.3.0</span>
     </div>
   );
 }

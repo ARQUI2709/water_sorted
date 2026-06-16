@@ -166,7 +166,7 @@ export function BottleGlass({ w, h }) {
     >
       {/* Outer glass body — light fill + white stroke */}
       <path
-        d="M 37,4 L 63,4 Q 67,4 67,9 L 67,18 Q 79,25 85,39 L 91,57 Q 94,64 94,72 L 94,237 Q 94,267 62,271 L 38,271 Q 6,267 6,237 L 6,72 Q 6,64 9,57 L 15,39 Q 21,25 33,18 L 33,9 Q 33,4 37,4 Z"
+        d="M 27,4 L 73,4 Q 75,4 74,9 L 70,30 Q 79,32 85,39 L 91,50 Q 94,64 94,72 L 94,237 Q 94,267 62,271 L 38,271 Q 6,267 6,237 L 6,72 Q 6,64 9,50 L 15,39 Q 21,32 30,30 L 26,9 Q 25,4 27,4 Z"
         fill="rgba(255,255,255,0.07)"
         stroke="rgba(255,255,255,0.68)"
         strokeWidth="3.5"
@@ -174,19 +174,14 @@ export function BottleGlass({ w, h }) {
       />
       {/* Inner depth line */}
       <path
-        d="M 37,4 L 63,4 Q 67,4 67,9 L 67,18 Q 79,25 85,39 L 91,57 Q 94,64 94,72 L 94,237 Q 94,267 62,271 L 38,271 Q 6,267 6,237 L 6,72 Q 6,64 9,57 L 15,39 Q 21,25 33,18 L 33,9 Q 33,4 37,4 Z"
+        d="M 27,4 L 73,4 Q 75,4 74,9 L 70,30 Q 79,32 85,39 L 91,50 Q 94,64 94,72 L 94,237 Q 94,267 62,271 L 38,271 Q 6,267 6,237 L 6,72 Q 6,64 9,50 L 15,39 Q 21,32 30,30 L 26,9 Q 25,4 27,4 Z"
         fill="none"
         stroke="rgba(10,14,60,0.28)"
         strokeWidth="1.5"
         strokeLinejoin="round"
         transform="translate(1,1)"
       />
-      {/* Cap / lip at top */}
-      <rect x="34" y="1" width="32" height="10" rx="5" ry="5"
-        fill="rgba(255,255,255,0.10)"
-        stroke="rgba(255,255,255,0.58)"
-        strokeWidth="2"
-      />
+
       {/* Left gloss stripe */}
       <rect x="10" y="72" width="9" height="158" rx="4" ry="4"
         fill="rgba(255,255,255,0.28)"
@@ -217,8 +212,8 @@ export function Bottle({
 
   const imgW = w;
   const imgH = Math.round(w * 2.8);
-  const liquidTop = Math.round(imgH * 0.22);
-  const liquidBot = Math.round(imgH * 0.05);
+  const liquidTop = Math.round(imgH * 0.20);
+  const liquidBot = Math.round(imgH * 0.03);
   const liquidH = imgH - liquidTop - liquidBot;
   const liqInset = Math.round(w * 0.07);
   const liqW = w - liqInset * 2;
@@ -246,9 +241,8 @@ export function Bottle({
             : completed ? `drop-shadow(0 0 8px ${doneColor}88)`
               : "none",
         animation: shaking ? "shake 0.3s ease-out"
-          : pourOut ? `${pourOut.dir > 0 ? "pourTiltR" : "pourTiltL"} 0.4s ease-out`
-            : hinted ? "hintPulse 0.8s ease-in-out 2"
-              : "none",
+          : hinted ? "hintPulse 0.8s ease-in-out 2"
+            : "none",
       }}
     >
       {/* Liquid segments */}
@@ -321,8 +315,8 @@ export function Bottle({
                 <div key={`d${pourOut.key}-${di}`} className="pointer-events-none" style={{
                   height: sliceH,
                   backgroundColor: getColor(pourOut.color),
-                  animation: "drainOut 0.3s ease-in forwards",
-                  transformOrigin: "top",
+                  animation: `drainOut 0.3s ease-in ${0.2 + (pourOut.count - 1 - di) * 0.3}s both`,
+                  transformOrigin: "bottom",
                 }} />
               );
             })

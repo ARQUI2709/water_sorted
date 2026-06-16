@@ -6,34 +6,54 @@ import React from 'react';
 import { FONTS, UI, MAIN_COLORS, candy3d } from '../constants.js';
 import { ModalCard } from '../components/chrome.jsx';
 
-// Tiny decorative bottle used in step illustrations
-function MiniBottle({ slices, highlight }) {
+const BOTTLE_BODY = "M23,16 L18,30 C10,42 9,50 9,60 L9,106 Q9,122 32,122 Q55,122 55,106 L55,60 C55,50 54,42 46,30 L41,16 Z";
+const INTERIOR_BOTTOM = 122;
+const INTERIOR_HEIGHT = 106; // y=16 to y=122
+
+function TutorialBottle({ slices = [], capacity = 4, id, highlight }) {
+  const clipId = `tcb-${id}`;
+  const glossId = `tcg-${id}`;
+  const sliceH = INTERIOR_HEIGHT / capacity;
+
   return (
-    <div style={{
-      width: 30,
-      height: 80,
-      border: "2.5px solid rgba(255,255,255,0.55)",
-      borderTop: "none",
-      borderRadius: "0 0 12px 12px",
-      display: "flex",
-      flexDirection: "column-reverse",
-      overflow: "hidden",
-      boxShadow: highlight ? "0 0 12px rgba(255,255,255,0.45)" : "none",
-      position: "relative",
+    <svg width="64" height="132" viewBox="0 0 64 132" style={{
+      filter: highlight ? "drop-shadow(0 0 12px rgba(255,255,255,0.45))" : "none",
     }}>
+      <defs>
+        <clipPath id={clipId}>
+          <path d={BOTTLE_BODY} />
+        </clipPath>
+        <linearGradient id={glossId} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="rgba(255,255,255,0.28)" />
+          <stop offset="0.4" stopColor="rgba(255,255,255,0.07)" />
+          <stop offset="1" stopColor="rgba(0,0,0,0)" />
+        </linearGradient>
+      </defs>
+
+      {/* Liquid slices — slices[0] is the bottom-most */}
       {slices.map((color, i) => (
-        <div key={i} style={{ height: 18, backgroundColor: color || "transparent" }} />
+        <rect
+          key={i}
+          x={0} y={INTERIOR_BOTTOM - (i + 1) * sliceH}
+          width={64} height={sliceH}
+          fill={color || "transparent"}
+          clipPath={`url(#${clipId})`}
+        />
       ))}
-      {/* Gloss stripe */}
-      <div style={{
-        position: "absolute",
-        top: 4, left: 4,
-        width: 4, height: "60%",
-        background: "rgba(255,255,255,0.30)",
-        borderRadius: 2,
-        pointerEvents: "none",
-      }} />
-    </div>
+
+      {/* Glass gloss */}
+      <rect x={0} y={0} width={64} height={132}
+        fill={`url(#${glossId})`} clipPath={`url(#${clipId})`} />
+
+      {/* Bottle body outline */}
+      <path d={BOTTLE_BODY} fill="none"
+        stroke="rgba(255,255,255,0.60)" strokeWidth="2.5" strokeLinejoin="round" />
+
+      {/* Neck */}
+      <rect x="22" y="2" width="20" height="16" rx="4"
+        fill="rgba(255,255,255,0.05)"
+        stroke="rgba(255,255,255,0.60)" strokeWidth="2.5" />
+    </svg>
   );
 }
 
@@ -42,30 +62,30 @@ const BLUE = MAIN_COLORS[2];
 
 const STEPS = [
   {
-    title: "TAP TO POUR",
-    body: "Tap a bottle to pick it up, then tap another bottle to pour. You can only pour onto the same color or into an empty bottle.",
+    title: "TOCA PARA VERTER",
+    body: "Toca una botella para seleccionarla, luego toca otra para verter. Solo puedes verter sobre el mismo color o en una botella vacía.",
     art: (
-      <div className="flex items-end justify-center gap-4">
-        <MiniBottle slices={[BLUE, RED, RED]} highlight />
-        <span style={{ color: UI.text.secondary, fontSize: "1.3rem" }}>→</span>
-        <MiniBottle slices={[RED]} />
+      <div className="flex items-center justify-center gap-4">
+        <TutorialBottle slices={[BLUE, RED, RED]} id="s1a" highlight />
+        <span style={{ color: UI.text.secondary, fontSize: "1.6rem" }}>→</span>
+        <TutorialBottle slices={[RED]} id="s1b" />
       </div>
     ),
   },
   {
-    title: "SORT TO WIN",
-    body: "Fill each bottle with a single color to complete it. Sort every color to win the level.",
+    title: "ORDENAR PARA GANAR",
+    body: "Llena cada botella con un solo color para completarla. Ordena cada color para ganar el nivel.",
     art: (
-      <div className="flex items-end justify-center gap-4">
-        <MiniBottle slices={[RED, RED, RED, RED]} highlight />
-        <span style={{ color: "#3fd68f", fontSize: "1.5rem" }}>✓</span>
-        <MiniBottle slices={[BLUE, BLUE, BLUE, BLUE]} highlight />
+      <div className="flex items-center justify-center gap-4">
+        <TutorialBottle slices={[RED, RED, RED, RED]} id="s2a" highlight />
+        <span style={{ color: "#3fd68f", fontSize: "2rem" }}>✓</span>
+        <TutorialBottle slices={[BLUE, BLUE, BLUE, BLUE]} id="s2b" highlight />
       </div>
     ),
   },
   {
-    title: "STARS & HELPERS",
-    body: "Fewer moves earn more stars (up to ★★★). Undo and hints are limited per level. Higher levels hide some colors behind a ? until you uncover them.",
+    title: "ESTRELLAS Y AYUDAS",
+    body: "Menos movimientos dan más estrellas (hasta ★★★). Deshacer y pistas son limitados. En niveles avanzados, algunos colores están ocultos tras ? hasta que los descubres.",
     art: (
       <div className="flex items-center justify-center gap-2" style={{ fontSize: "1.5rem" }}>
         <span style={{ color: UI.accent.gold }}>★★★</span>
@@ -88,9 +108,9 @@ export function Tutorial({ show, onClose }) {
   const s = STEPS[step];
 
   return (
-    <ModalCard show={show} onClose={onClose} title="HOW TO PLAY" showClose={false} backdropClose={false}>
+    <ModalCard show={show} onClose={onClose} title="CÓMO JUGAR" showClose={false} backdropClose={false}>
       <div className="text-center">
-        <div className="flex items-center justify-center mb-4" style={{ minHeight: 90 }}>
+        <div className="flex items-center justify-center mb-4" style={{ minHeight: 140 }}>
           {s.art}
         </div>
 
@@ -142,7 +162,7 @@ export function Tutorial({ show, onClose }) {
             cursor: "pointer",
           }}
         >
-          {last ? "GOT IT!" : "NEXT →"}
+          {last ? "¡ENTENDIDO!" : "SIGUIENTE →"}
         </button>
 
         {!last && (
@@ -158,7 +178,7 @@ export function Tutorial({ show, onClose }) {
               cursor: "pointer",
             }}
           >
-            Skip
+            Saltar
           </button>
         )}
       </div>
